@@ -1,20 +1,45 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppUser, Role, UserRole, RefreshToken } from '../models/associations';
-import { hashPassword, comparePassword, hashToken, compareToken } from '../helpers/password';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken, getRefreshTokenExpiry } from '../helpers/jwt';
-import { AuthenticatedRequest, TokenPayload, UserRoleInfo, RoleName, RoleScope } from '../interfaces';
-import { badRequest, unauthorized, notFound } from '../middlewares/errorHandler';
-import { RegisterInput, LoginInput } from '../validators/schemas';
+import { Request, Response, NextFunction } from "express";
+import { AppUser, Role, UserRole, RefreshToken } from "../models/associations";
+import {
+  hashPassword,
+  comparePassword,
+  hashToken,
+  compareToken,
+} from "../helpers/password";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  getRefreshTokenExpiry,
+} from "../helpers/jwt";
+import {
+  AuthenticatedRequest,
+  TokenPayload,
+  UserRoleInfo,
+  RoleName,
+  RoleScope,
+} from "../interfaces";
+import {
+  badRequest,
+  unauthorized,
+  notFound,
+} from "../middlewares/errorHandler";
+import { RegisterInput, LoginInput } from "../validators/schemas";
 
 // POST /auth/register
-export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, phone } = req.body as RegisterInput;
+    const { email, password, firstName, lastName, phone } =
+      req.body as RegisterInput;
 
     // Check if email already exists
     const existingUser = await AppUser.findOne({ where: { email } });
     if (existingUser) {
-      throw badRequest('Email already registered');
+      throw badRequest("Email already registered");
     }
 
     // Hash password
@@ -31,7 +56,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       data: {
         id: user.id,
         email: user.email,
@@ -45,7 +70,11 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 };
 
 // POST /auth/login
-export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { email, password } = req.body as LoginInput;
 
@@ -55,11 +84,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       include: [
         {
           model: UserRole,
-          as: 'userRoles',
+          as: "userRoles",
           include: [
             {
               model: Role,
-              as: 'role',
+              as: "role",
             },
           ],
         },
@@ -67,22 +96,24 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     });
 
     if (!user) {
-      throw unauthorized('Invalid email or password');
+      throw unauthorized("Invalid email or password");
     }
 
     if (!user.isActive) {
-      throw unauthorized('Account is deactivated');
+      throw unauthorized("Account is deactivated");
     }
 
     // Verify password
     const isValidPassword = await comparePassword(password, user.passwordHash);
     if (!isValidPassword) {
-      throw unauthorized('Invalid email or password');
+      throw unauthorized("Invalid email or password");
     }
 
     // Build roles array
-    const userRoles = (user as AppUser & { userRoles: Array<UserRole & { role: Role }> }).userRoles || [];
-    const roles: UserRoleInfo[] = userRoles.map(ur => ({
+    const userRoles =
+      (user as AppUser & { userRoles: Array<UserRole & { role: Role }> })
+        .userRoles || [];
+    const roles: UserRoleInfo[] = userRoles.map((ur) => ({
       roleId: ur.roleId,
       roleName: ur.role.name,
       scope: ur.scope,
@@ -106,7 +137,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       userId: user.id,
       tokenHash,
       expiresAt: getRefreshTokenExpiry(),
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     });
 
@@ -133,18 +164,22 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 };
 
 // POST /auth/refresh
-export const refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const refresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      throw badRequest('Refresh token is required');
+      throw badRequest("Refresh token is required");
     }
 
     // Verify refresh token
     const decoded = verifyRefreshToken(refreshToken);
     if (!decoded) {
-      throw unauthorized('Invalid or expired refresh token');
+      throw unauthorized("Invalid or expired refresh token");
     }
 
     // Find user
@@ -152,11 +187,11 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
       include: [
         {
           model: UserRole,
-          as: 'userRoles',
+          as: "userRoles",
           include: [
             {
               model: Role,
-              as: 'role',
+              as: "role",
             },
           ],
         },
@@ -164,7 +199,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     });
 
     if (!user || !user.isActive) {
-      throw unauthorized('User not found or deactivated');
+      throw unauthorized("User not found or deactivated");
     }
 
     // Find and validate stored refresh token
@@ -174,22 +209,27 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 
     let validStoredToken: RefreshToken | null = null;
     for (const storedToken of storedTokens) {
-      if (storedToken.isValid() && await compareToken(refreshToken, storedToken.tokenHash)) {
+      if (
+        storedToken.isValid() &&
+        (await compareToken(refreshToken, storedToken.tokenHash))
+      ) {
         validStoredToken = storedToken;
         break;
       }
     }
 
     if (!validStoredToken) {
-      throw unauthorized('Invalid refresh token');
+      throw unauthorized("Invalid refresh token");
     }
 
     // Revoke old refresh token (rotation)
     await validStoredToken.update({ revokedAt: new Date() });
 
     // Build roles array
-    const userRoles = (user as AppUser & { userRoles: Array<UserRole & { role: Role }> }).userRoles || [];
-    const roles: UserRoleInfo[] = userRoles.map(ur => ({
+    const userRoles =
+      (user as AppUser & { userRoles: Array<UserRole & { role: Role }> })
+        .userRoles || [];
+    const roles: UserRoleInfo[] = userRoles.map((ur) => ({
       roleId: ur.roleId,
       roleName: ur.role.name,
       scope: ur.scope,
@@ -213,7 +253,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
       userId: user.id,
       tokenHash: newTokenHash,
       expiresAt: getRefreshTokenExpiry(),
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers["user-agent"],
       ipAddress: req.ip,
     });
 
@@ -230,14 +270,21 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 };
 
 // POST /auth/logout
-export const logout = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const logout = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { refreshToken } = req.body;
 
     if (refreshToken && req.user) {
       // Find and revoke the specific refresh token
       const storedTokens = await RefreshToken.findAll({
-        where: { userId: req.user.userId, revokedAt: null as unknown as undefined },
+        where: {
+          userId: req.user.userId,
+          revokedAt: null as unknown as undefined,
+        },
       });
 
       for (const storedToken of storedTokens) {
@@ -250,7 +297,7 @@ export const logout = async (req: AuthenticatedRequest, res: Response, next: Nex
 
     res.json({
       success: true,
-      message: 'Logged out successfully',
+      message: "Logged out successfully",
     });
   } catch (error) {
     next(error);
@@ -258,22 +305,26 @@ export const logout = async (req: AuthenticatedRequest, res: Response, next: Nex
 };
 
 // GET /auth/me
-export const me = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const me = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     if (!req.user) {
-      throw unauthorized('Not authenticated');
+      throw unauthorized("Not authenticated");
     }
 
     const user = await AppUser.findByPk(req.user.userId, {
-      attributes: { exclude: ['passwordHash'] },
+      attributes: { exclude: ["passwordHash"] },
       include: [
         {
           model: UserRole,
-          as: 'userRoles',
+          as: "userRoles",
           include: [
             {
               model: Role,
-              as: 'role',
+              as: "role",
             },
           ],
         },
@@ -281,11 +332,13 @@ export const me = async (req: AuthenticatedRequest, res: Response, next: NextFun
     });
 
     if (!user) {
-      throw notFound('User not found');
+      throw notFound("User not found");
     }
 
-    const userRoles = (user as AppUser & { userRoles: Array<UserRole & { role: Role }> }).userRoles || [];
-    const roles: UserRoleInfo[] = userRoles.map(ur => ({
+    const userRoles =
+      (user as AppUser & { userRoles: Array<UserRole & { role: Role }> })
+        .userRoles || [];
+    const roles: UserRoleInfo[] = userRoles.map((ur) => ({
       roleId: ur.roleId,
       roleName: ur.role.name,
       scope: ur.scope,
