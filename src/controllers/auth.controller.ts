@@ -169,7 +169,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 
     // Find and validate stored refresh token
     const storedTokens = await RefreshToken.findAll({
-      where: { userId: user.id, revokedAt: null },
+      where: { userId: user.id, revokedAt: null as unknown as undefined },
     });
 
     let validStoredToken: RefreshToken | null = null;
@@ -237,7 +237,7 @@ export const logout = async (req: AuthenticatedRequest, res: Response, next: Nex
     if (refreshToken && req.user) {
       // Find and revoke the specific refresh token
       const storedTokens = await RefreshToken.findAll({
-        where: { userId: req.user.userId, revokedAt: null },
+        where: { userId: req.user.userId, revokedAt: null as unknown as undefined },
       });
 
       for (const storedToken of storedTokens) {

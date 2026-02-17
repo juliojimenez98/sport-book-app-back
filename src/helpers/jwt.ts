@@ -14,14 +14,14 @@ export interface DecodedToken extends JwtPayload {
 
 export const generateAccessToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
-    expiresIn: ACCESS_EXPIRES_IN as string,
+    expiresIn: ACCESS_EXPIRES_IN as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, ACCESS_SECRET, options);
 };
 
 export const generateRefreshToken = (payload: TokenPayload): string => {
   const options: SignOptions = {
-    expiresIn: REFRESH_EXPIRES_IN as string,
+    expiresIn: REFRESH_EXPIRES_IN as SignOptions['expiresIn'],
   };
   return jwt.sign(payload, REFRESH_SECRET, options);
 };
