@@ -7,6 +7,7 @@ import {
   Guest,
   AppUser,
   BookingCancellation,
+  Sport,
 } from "../models/associations";
 import {
   AuthenticatedRequest,
@@ -21,7 +22,10 @@ import {
 } from "../middlewares/errorHandler";
 import { hasAccessToBranch } from "../middlewares/authorize";
 import { calculateBookingPrice, isValidTimeRange } from "../helpers/utils";
-import { CreateBookingInput } from "../validators/schemas";
+import {
+  CreateBookingInput,
+  RejectBookingInput,
+} from "../validators/schemas";
 import { Op } from "sequelize";
 import sequelize from "../db/connection";
 
@@ -45,6 +49,27 @@ export const createBooking = async (
       throw badRequest(
         "Invalid time range. Start must be in the future and before end.",
       );
+    }
+
+    // Check for duplicate pending bookings for the same user
+    if (req.user) {
+      const existingPending = await Booking.findOne({
+        where: {
+          userId: req.user.userId,
+          branchId: (await Resource.findByPk(resourceId))?.branchId, // Optimizable, but safe
+          resourceId,
+          status: BookingStatus.PENDING,
+          startAt: { [Op.lt]: endDate },
+          endAt: { [Op.gt]: startDate },
+        },
+        transaction,
+      });
+
+      if (existingPending) {
+        throw conflict(
+          "Ya tienes una reserva pendiente para este horario. Espera a que sea aprobada o rechazada.",
+        );
+      }
     }
 
     // Get resource with branch info
@@ -460,6 +485,8 @@ export const confirmBooking = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { id } = req.params;
 
@@ -480,16 +507,113 @@ export const confirmBooking = async (
       throw forbidden("Access denied");
     }
 
-    await booking.update({ status: BookingStatus.CONFIRMED });
+    await booking.update({ status: BookingStatus.CONFIRMED }, { transaction });
+
+    // Auto-reject other pending bookings for the same slot
+    const overlappingBookings = await Booking.findAll({
+      where: {
+        bookingId: { [Op.ne]: booking.bookingId },
+        resourceId: booking.resourceId,
+        status: BookingStatus.PENDING,
+        startAt: { [Op.lt]: booking.endAt },
+        endAt: { [Op.gt]: booking.startAt },
+      },
+      transaction,
+    });
+
+    if (overlappingBookings.length > 0) {
+      await Promise.all(
+        overlappingBookings.map(async (otherBooking) => {
+          await otherBooking.update(
+            {
+              status: BookingStatus.REJECTED,
+              rejectionReason:
+                "Se aprobó otra reserva para este horario (prioridad de confirmación).",
+            },
+            { transaction },
+          );
+
+          await BookingCancellation.create(
+            {
+              bookingId: otherBooking.bookingId,
+              cancelledBy: req.user?.userId,
+              reason: "Auto-rejected due to overlap with confirmed booking",
+            },
+            { transaction },
+          );
+        }),
+      );
+    }
+
+    await transaction.commit();
 
     res.json({
       success: true,
       data: booking,
     });
   } catch (error) {
+    if (transaction) await transaction.rollback();
     next(error);
   }
 };
 
-// Import Sport for the include
-import { Sport } from "../models/associations";
+// PUT /bookings/:id/reject (admin)
+export const rejectBooking = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const { reason } = req.body as RejectBookingInput;
+
+    const booking = await Booking.findByPk(id, {
+      include: [{ model: Branch, as: "branch" }],
+      transaction,
+    });
+
+    if (!booking) {
+      throw notFound("Booking not found");
+    }
+
+    if (booking.status !== BookingStatus.PENDING) {
+      throw badRequest("Only pending bookings can be rejected");
+    }
+
+    const branch = (booking as Booking & { branch: Branch }).branch;
+    if (!hasAccessToBranch(req, booking.branchId, branch.tenantId)) {
+      throw forbidden("Access denied");
+    }
+
+    await booking.update(
+      {
+        status: BookingStatus.REJECTED,
+        rejectionReason: reason,
+      },
+      { transaction },
+    );
+
+    // Create cancellation record for audit
+    await BookingCancellation.create(
+      {
+        bookingId: booking.bookingId,
+        cancelledBy: req.user?.userId,
+        reason: reason,
+      },
+      { transaction },
+    );
+
+    await transaction.commit();
+
+    res.json({
+      success: true,
+      data: booking,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    next(error);
+  }
+};
+
+

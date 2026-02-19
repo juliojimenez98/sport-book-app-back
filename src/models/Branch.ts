@@ -10,6 +10,9 @@ interface BranchAttributes {
   phone?: string;
   email?: string;
   timezone: string;
+  // Location
+  regionId?: string;
+  comunaId?: string;
   // Amenities
   hasParking: boolean;
   hasBathrooms: boolean;
@@ -32,6 +35,8 @@ interface BranchCreationAttributes extends Optional<
   | "branchId"
   | "isActive"
   | "timezone"
+  | "regionId"
+  | "comunaId"
   | "hasParking"
   | "hasBathrooms"
   | "hasShowers"
@@ -55,6 +60,9 @@ class Branch
   public phone?: string;
   public email?: string;
   public timezone!: string;
+  // Location
+  public regionId?: string;
+  public comunaId?: string;
   // Amenities
   public hasParking!: boolean;
   public hasBathrooms!: boolean;
@@ -114,7 +122,17 @@ Branch.init(
     timezone: {
       type: DataTypes.STRING(50),
       allowNull: false,
-      defaultValue: "America/Mexico_City",
+      defaultValue: "America/Santiago",
+    },
+    regionId: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      field: "region_id",
+    },
+    comunaId: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      field: "comuna_id",
     },
     // Amenities
     hasParking: {

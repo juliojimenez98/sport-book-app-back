@@ -267,6 +267,69 @@ export const getTenantDashboardStats = async (
     const uniqueUserIds = [...new Set(tenantUserRoles.map((ur) => ur.userId))];
     const staffCount = uniqueUserIds.length;
 
+    // Get pending bookings list (limit 10)
+    const pendingBookingsList = await Booking.findAll({
+      where: {
+        tenantId: parseInt(id),
+        status: "pending",
+      },
+      order: [["createdAt", "ASC"]], // Oldest first
+      limit: 10,
+      include: [
+        {
+          model: Resource,
+          as: "resource",
+          attributes: ["resourceId", "name"],
+        },
+        {
+          model: Branch,
+          as: "branch",
+          attributes: ["branchId", "name"],
+        },
+        {
+          model: AppUser,
+          as: "user",
+          attributes: ["userId", "email", "firstName", "lastName"],
+        },
+      ],
+    });
+
+    // Get bookings chart data (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const bookingsLast30Days = await Booking.findAll({
+      where: {
+        tenantId: parseInt(id),
+        startAt: { [Op.gte]: thirtyDaysAgo },
+        status: { [Op.notIn]: ["cancelled", "rejected", "no_show"] },
+      },
+      attributes: ["startAt", "totalPrice"],
+    });
+
+    // Group by date
+    const chartMap = new Map<string, { date: string; bookings: number; revenue: number }>();
+    
+    // Initialize map with all dates
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        chartMap.set(dateStr, { date: dateStr, bookings: 0, revenue: 0 });
+    }
+
+    bookingsLast30Days.forEach(b => {
+        const dateStr = new Date(b.startAt).toISOString().split('T')[0];
+        if (chartMap.has(dateStr)) {
+            const entry = chartMap.get(dateStr)!;
+            entry.bookings += 1;
+            entry.revenue += Number(b.totalPrice || 0);
+        }
+    });
+
+    const bookingsChart = Array.from(chartMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
     // Get recent bookings with details
     const recentBookings = await Booking.findAll({
       where: { tenantId: parseInt(id) },
@@ -382,6 +445,8 @@ export const getTenantDashboardStats = async (
         recentBookings,
         branchSummary,
         tenantUsers,
+        pendingBookingsList,
+        bookingsChart,
       },
     });
   } catch (error) {

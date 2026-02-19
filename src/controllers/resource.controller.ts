@@ -261,7 +261,7 @@ export const getResourceCalendar = async (
         },
       },
       order: [["startAt", "ASC"]],
-      attributes: ["bookingId", "startAt", "endAt", "status"],
+      attributes: ["bookingId", "startAt", "endAt", "status", "userId"],
     });
 
     // Get blocked slots for the branch (global + resource-specific)
@@ -291,6 +291,7 @@ export const getResourceCalendar = async (
           startAt: b.startAt,
           endAt: b.endAt,
           status: b.status,
+          userId: b.userId,
         })),
         blockedSlots: blockedSlots.map((bs) => ({
           date: bs.date,

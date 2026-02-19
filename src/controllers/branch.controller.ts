@@ -178,7 +178,7 @@ export const createBranch = async (
 ): Promise<void> => {
   try {
     const { tenantId } = req.params;
-    const { name, slug, address, phone, email, timezone } =
+    const { name, slug, address, phone, email, timezone, comunaId, regionId } =
       req.body as CreateBranchInput;
 
     // Verify tenant exists
@@ -210,7 +210,9 @@ export const createBranch = async (
       address,
       phone,
       email,
-      timezone: timezone || "America/Mexico_City",
+      timezone: timezone || "America/Santiago",
+      comunaId,
+      regionId,
     });
 
     // Create default branch hours (Mon-Sat 8:00-22:00, Sun closed)

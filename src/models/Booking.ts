@@ -21,6 +21,7 @@ interface BookingAttributes {
   totalPrice: number;
   currency: string;
   notes?: string;
+  rejectionReason?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -47,6 +48,7 @@ class Booking
   public totalPrice!: number;
   public currency!: string;
   public notes?: string;
+  public rejectionReason?: string;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -136,6 +138,7 @@ Booking.init(
             BookingStatus.CANCELLED,
             BookingStatus.COMPLETED,
             BookingStatus.NO_SHOW,
+            BookingStatus.REJECTED,
           ],
         ],
       },
@@ -168,6 +171,11 @@ Booking.init(
     notes: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    rejectionReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "rejection_reason",
     },
   },
   {

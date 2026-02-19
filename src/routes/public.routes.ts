@@ -6,6 +6,7 @@ import {
   Resource,
   BranchSport,
 } from "../models/associations";
+import chileLocations from "../data/chile-locations.json";
 
 const router = Router();
 
@@ -191,28 +192,54 @@ router.get(
   },
 );
 
+// GET /public/locations - Chile regions and communes
+router.get(
+  "/locations",
+  (_req: Request, res: Response) => {
+    res.json({
+      success: true,
+      data: chileLocations,
+    });
+  },
+);
+
 // GET /public/branches - List all active branches with tenant info
 router.get(
   "/branches",
-  async (_req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const { comunaId, regionId, sportId } = req.query;
+
+      const branchWhere: Record<string, unknown> = { isActive: true };
+      if (comunaId) branchWhere.comunaId = comunaId as string;
+      if (regionId) branchWhere.regionId = regionId as string;
+
+      // Build includes
+      const includes: any[] = [
+        {
+          model: Tenant,
+          as: "tenant",
+          where: { isActive: true },
+          attributes: [
+            "tenantId",
+            "name",
+            "slug",
+            "primaryColor",
+            "secondaryColor",
+            "accentColor",
+          ],
+        },
+        {
+          model: Sport,
+          as: "sports",
+          through: { attributes: [] },
+          ...(sportId ? { where: { sportId: parseInt(sportId as string) } } : {}),
+        },
+      ];
+
       const branches = await Branch.findAll({
-        where: { isActive: true },
-        include: [
-          {
-            model: Tenant,
-            as: "tenant",
-            where: { isActive: true },
-            attributes: [
-              "tenantId",
-              "name",
-              "slug",
-              "primaryColor",
-              "secondaryColor",
-              "accentColor",
-            ],
-          },
-        ],
+        where: branchWhere,
+        include: includes,
         order: [
           ["tenant", "name", "ASC"],
           ["name", "ASC"],

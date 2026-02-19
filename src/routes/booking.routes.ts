@@ -5,6 +5,7 @@ import {
   getBookingById,
   getMyBookings,
   confirmBooking,
+  rejectBooking,
 } from '../controllers/booking.controller';
 import { authenticate, optionalAuth } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
@@ -15,6 +16,7 @@ import {
   idParamSchema,
   createBookingSchema,
   cancelBookingSchema,
+  rejectBookingSchema,
 } from '../validators/schemas';
 
 const router = Router();
@@ -52,6 +54,16 @@ router.put(
   validate(idParamSchema, 'params'),
   authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN, RoleName.BRANCH_ADMIN, RoleName.STAFF] }),
   confirmBooking
+);
+
+// PUT /bookings/:id/reject (admin)
+router.put(
+  '/:id/reject',
+  authenticate,
+  validate(idParamSchema, 'params'),
+  validate(rejectBookingSchema),
+  authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN, RoleName.BRANCH_ADMIN, RoleName.STAFF] }),
+  rejectBooking
 );
 
 // GET /me/bookings - this route is handled separately

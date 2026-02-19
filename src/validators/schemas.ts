@@ -87,6 +87,9 @@ export const createBranchSchema = z.object({
   phone: z.string().max(20).optional(),
   email: z.string().email().optional().or(z.literal("")),
   timezone: z.string().max(50).optional(),
+  // Location
+  regionId: z.string().max(10).optional(),
+  comunaId: z.string().max(50).optional(),
   // Amenities
   hasParking: z.boolean().optional(),
   hasBathrooms: z.boolean().optional(),
@@ -106,6 +109,9 @@ export const updateBranchSchema = z.object({
   phone: z.string().max(20).optional(),
   email: z.string().email().optional().or(z.literal("")),
   timezone: z.string().max(50).optional(),
+  // Location
+  regionId: z.string().max(10).optional(),
+  comunaId: z.string().max(50).optional(),
   isActive: z.boolean().optional(),
   // Amenities
   hasParking: z.boolean().optional(),
@@ -191,6 +197,10 @@ export const cancelBookingSchema = z.object({
   reason: z.string().optional(),
 });
 
+export const rejectBookingSchema = z.object({
+  reason: z.string().min(1, "Rejection reason is required"),
+});
+
 export const calendarQuerySchema = z.object({
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
@@ -242,3 +252,4 @@ export type UpdateBranchInput = z.infer<typeof updateBranchSchema>;
 export type CreateResourceInput = z.infer<typeof createResourceSchema>;
 export type UpdateResourceInput = z.infer<typeof updateResourceSchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+export type RejectBookingInput = z.infer<typeof rejectBookingSchema>;
