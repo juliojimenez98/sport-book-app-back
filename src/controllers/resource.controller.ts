@@ -243,7 +243,10 @@ export const getResourceCalendar = async (
       ? new Date(to as string)
       : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    // Get all bookings for this resource in the date range
+    // Extend toDate to end of day (UTC) to include all bookings within the day
+    toDate.setUTCHours(23, 59, 59, 999);
+
+    // Get all bookings for this resource in the date range (overlap logic)
     const bookings = await Booking.findAll({
       where: {
         resourceId: parseInt(resourceId),
@@ -251,10 +254,10 @@ export const getResourceCalendar = async (
           [Op.in]: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
         },
         startAt: {
-          [Op.gte]: fromDate,
+          [Op.lt]: toDate,
         },
         endAt: {
-          [Op.lte]: toDate,
+          [Op.gt]: fromDate,
         },
       },
       order: [["startAt", "ASC"]],

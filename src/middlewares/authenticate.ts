@@ -35,6 +35,7 @@ export const authenticate = (
 };
 
 // Optional authentication - doesn't fail if no token
+// If a token IS sent but is invalid/expired, returns 401 so the frontend can refresh
 export const optionalAuth = (
   req: AuthenticatedRequest,
   _res: Response,
@@ -53,12 +54,15 @@ export const optionalAuth = (
           email: decoded.email,
           roles: decoded.roles,
         } as TokenPayload;
+      } else {
+        // Token was sent but is invalid/expired — return 401 so frontend can refresh
+        throw unauthorized('Invalid or expired access token');
       }
     }
 
+    // No token sent at all — continue as guest
     next();
-  } catch {
-    // Silently continue without auth
-    next();
+  } catch (error) {
+    next(error);
   }
 };

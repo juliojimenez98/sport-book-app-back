@@ -3,6 +3,7 @@ import {
   Booking,
   Resource,
   Branch,
+  Tenant,
   Guest,
   AppUser,
   BookingCancellation,
@@ -333,19 +334,26 @@ export const getMyBookings = async (
         {
           model: Resource,
           as: "resource",
-          attributes: ["resourceId", "name"],
+          attributes: ["resourceId", "name", "pricePerHour", "currency"],
           include: [
             {
               model: Sport,
               as: "sport",
               attributes: ["sportId", "name"],
             },
+            {
+              model: Branch,
+              as: "branch",
+              attributes: ["branchId", "name"],
+              include: [
+                {
+                  model: Tenant,
+                  as: "tenant",
+                  attributes: ["tenantId", "name", "slug"],
+                },
+              ],
+            },
           ],
-        },
-        {
-          model: Branch,
-          as: "branch",
-          attributes: ["branchId", "name"],
         },
       ],
     });

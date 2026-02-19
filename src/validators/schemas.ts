@@ -155,8 +155,8 @@ export const updateResourceSchema = z.object({
 export const createBookingSchema = z
   .object({
     resourceId: z.number().int().positive(),
-    startAt: z.string().datetime(),
-    endAt: z.string().datetime(),
+    startAt: z.string().datetime({ local: true }),
+    endAt: z.string().datetime({ local: true }),
     source: z
       .enum([
         BookingSource.WEB,
