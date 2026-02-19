@@ -1,8 +1,8 @@
-import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '../db/connection';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../db/connection";
 
 interface GuestAttributes {
-  id: number;
+  guestId: number;
   tenantId: number;
   email: string;
   firstName: string;
@@ -12,10 +12,16 @@ interface GuestAttributes {
   updatedAt?: Date;
 }
 
-interface GuestCreationAttributes extends Optional<GuestAttributes, 'id'> {}
+interface GuestCreationAttributes extends Optional<
+  GuestAttributes,
+  "guestId"
+> {}
 
-class Guest extends Model<GuestAttributes, GuestCreationAttributes> implements GuestAttributes {
-  public id!: number;
+class Guest
+  extends Model<GuestAttributes, GuestCreationAttributes>
+  implements GuestAttributes
+{
+  public guestId!: number;
   public tenantId!: number;
   public email!: string;
   public firstName!: string;
@@ -27,21 +33,22 @@ class Guest extends Model<GuestAttributes, GuestCreationAttributes> implements G
 
 Guest.init(
   {
-    id: {
+    guestId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     tenantId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'tenant_id',
+      field: "tenant_id",
       references: {
-        model: 'tenant',
-        key: 'id',
+        model: "tenant",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT',
+      onUpdate: "CASCADE",
+      onDelete: "RESTRICT",
     },
     email: {
       type: DataTypes.STRING(255),
@@ -50,12 +57,12 @@ Guest.init(
     firstName: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      field: 'first_name',
+      field: "first_name",
     },
     lastName: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      field: 'last_name',
+      field: "last_name",
     },
     phone: {
       type: DataTypes.STRING(20),
@@ -64,16 +71,16 @@ Guest.init(
   },
   {
     sequelize,
-    tableName: 'guest',
+    tableName: "guest",
     timestamps: true,
     underscored: true,
     indexes: [
       {
         unique: true,
-        fields: ['tenant_id', 'email'],
+        fields: ["tenant_id", "email"],
       },
     ],
-  }
+  },
 );
 
 export default Guest;

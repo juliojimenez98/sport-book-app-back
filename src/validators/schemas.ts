@@ -96,6 +96,8 @@ export const createBranchSchema = z.object({
   hasCafeteria: z.boolean().optional(),
   hasEquipmentRental: z.boolean().optional(),
   amenitiesDescription: z.string().max(1000).optional(),
+  // Booking settings
+  requiresApproval: z.boolean().optional(),
 });
 
 export const updateBranchSchema = z.object({
@@ -114,6 +116,8 @@ export const updateBranchSchema = z.object({
   hasCafeteria: z.boolean().optional(),
   hasEquipmentRental: z.boolean().optional(),
   amenitiesDescription: z.string().max(1000).optional(),
+  // Booking settings
+  requiresApproval: z.boolean().optional(),
 });
 
 // ============ SPORT SCHEMAS ============

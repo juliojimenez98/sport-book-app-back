@@ -1,8 +1,8 @@
-import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '../db/connection';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../db/connection";
 
 interface BranchHoursAttributes {
-  id: number;
+  branchHoursId: number;
   branchId: number;
   dayOfWeek: number; // 0 = Sunday, 6 = Saturday
   openTime: string; // HH:MM format
@@ -12,10 +12,16 @@ interface BranchHoursAttributes {
   updatedAt?: Date;
 }
 
-interface BranchHoursCreationAttributes extends Optional<BranchHoursAttributes, 'id' | 'isClosed'> {}
+interface BranchHoursCreationAttributes extends Optional<
+  BranchHoursAttributes,
+  "branchHoursId" | "isClosed"
+> {}
 
-class BranchHours extends Model<BranchHoursAttributes, BranchHoursCreationAttributes> implements BranchHoursAttributes {
-  public id!: number;
+class BranchHours
+  extends Model<BranchHoursAttributes, BranchHoursCreationAttributes>
+  implements BranchHoursAttributes
+{
+  public branchHoursId!: number;
   public branchId!: number;
   public dayOfWeek!: number;
   public openTime!: string;
@@ -27,26 +33,27 @@ class BranchHours extends Model<BranchHoursAttributes, BranchHoursCreationAttrib
 
 BranchHours.init(
   {
-    id: {
+    branchHoursId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     branchId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'branch_id',
+      field: "branch_id",
       references: {
-        model: 'branch',
-        key: 'id',
+        model: "branch",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     dayOfWeek: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'day_of_week',
+      field: "day_of_week",
       validate: {
         min: 0,
         max: 6,
@@ -55,32 +62,32 @@ BranchHours.init(
     openTime: {
       type: DataTypes.STRING(5),
       allowNull: false,
-      field: 'open_time',
+      field: "open_time",
     },
     closeTime: {
       type: DataTypes.STRING(5),
       allowNull: false,
-      field: 'close_time',
+      field: "close_time",
     },
     isClosed: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
-      field: 'is_closed',
+      field: "is_closed",
     },
   },
   {
     sequelize,
-    tableName: 'branch_hours',
+    tableName: "branch_hours",
     timestamps: true,
     underscored: true,
     indexes: [
       {
         unique: true,
-        fields: ['branch_id', 'day_of_week'],
+        fields: ["branch_id", "day_of_week"],
       },
     ],
-  }
+  },
 );
 
 export default BranchHours;

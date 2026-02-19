@@ -1,20 +1,33 @@
-import { Request, Response, NextFunction } from 'express';
-import { Resource, Branch, Sport, Booking } from '../models/associations';
-import { AuthenticatedRequest, BookingStatus } from '../interfaces';
-import { notFound, badRequest, forbidden } from '../middlewares/errorHandler';
-import { hasAccessToBranch } from '../middlewares/authorize';
-import { CreateResourceInput, UpdateResourceInput } from '../validators/schemas';
-import { Op } from 'sequelize';
+import { Request, Response, NextFunction } from "express";
+import {
+  Resource,
+  Branch,
+  Sport,
+  Booking,
+  BlockedSlot,
+} from "../models/associations";
+import { AuthenticatedRequest, BookingStatus } from "../interfaces";
+import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
+import { hasAccessToBranch } from "../middlewares/authorize";
+import {
+  CreateResourceInput,
+  UpdateResourceInput,
+} from "../validators/schemas";
+import { Op } from "sequelize";
 
 // GET /branches/:branchId/resources
-export const getResourcesByBranch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getResourcesByBranch = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { branchId } = req.params;
     const { sportId } = req.query;
 
     const branch = await Branch.findByPk(branchId);
     if (!branch) {
-      throw notFound('Branch not found');
+      throw notFound("Branch not found");
     }
 
     const whereClause: Record<string, unknown> = {
@@ -28,12 +41,12 @@ export const getResourcesByBranch = async (req: Request, res: Response, next: Ne
 
     const resources = await Resource.findAll({
       where: whereClause,
-      order: [['name', 'ASC']],
+      order: [["name", "ASC"]],
       include: [
         {
           model: Sport,
-          as: 'sport',
-          attributes: ['id', 'name', 'iconUrl'],
+          as: "sport",
+          attributes: ["sportId", "name", "iconUrl"],
         },
       ],
     });
@@ -48,7 +61,11 @@ export const getResourcesByBranch = async (req: Request, res: Response, next: Ne
 };
 
 // GET /resources/:id
-export const getResourceById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getResourceById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -56,19 +73,19 @@ export const getResourceById = async (req: Request, res: Response, next: NextFun
       include: [
         {
           model: Branch,
-          as: 'branch',
-          attributes: ['id', 'name', 'tenantId', 'timezone'],
+          as: "branch",
+          attributes: ["branchId", "name", "tenantId", "timezone"],
         },
         {
           model: Sport,
-          as: 'sport',
-          attributes: ['id', 'name', 'iconUrl'],
+          as: "sport",
+          attributes: ["sportId", "name", "iconUrl"],
         },
       ],
     });
 
     if (!resource) {
-      throw notFound('Resource not found');
+      throw notFound("Resource not found");
     }
 
     res.json({
@@ -81,25 +98,30 @@ export const getResourceById = async (req: Request, res: Response, next: NextFun
 };
 
 // POST /branches/:branchId/resources
-export const createResource = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const createResource = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { branchId } = req.params;
-    const { sportId, name, description, pricePerHour, currency } = req.body as CreateResourceInput;
+    const { sportId, name, description, pricePerHour, currency } =
+      req.body as CreateResourceInput;
 
     const branch = await Branch.findByPk(branchId);
     if (!branch) {
-      throw notFound('Branch not found');
+      throw notFound("Branch not found");
     }
 
     // Check access
     if (!hasAccessToBranch(req, parseInt(branchId), branch.tenantId)) {
-      throw forbidden('Access denied to this branch');
+      throw forbidden("Access denied to this branch");
     }
 
     // Verify sport exists
     const sport = await Sport.findByPk(sportId);
     if (!sport) {
-      throw notFound('Sport not found');
+      throw notFound("Sport not found");
     }
 
     // Check if resource name already exists for this branch
@@ -107,7 +129,9 @@ export const createResource = async (req: AuthenticatedRequest, res: Response, n
       where: { branchId: parseInt(branchId), name },
     });
     if (existingResource) {
-      throw badRequest('Resource with this name already exists for this branch');
+      throw badRequest(
+        "Resource with this name already exists for this branch",
+      );
     }
 
     const resource = await Resource.create({
@@ -116,7 +140,7 @@ export const createResource = async (req: AuthenticatedRequest, res: Response, n
       name,
       description,
       pricePerHour,
-      currency: currency || 'MXN',
+      currency: currency || "MXN",
     });
 
     res.status(201).json({
@@ -129,22 +153,26 @@ export const createResource = async (req: AuthenticatedRequest, res: Response, n
 };
 
 // PUT /resources/:id
-export const updateResource = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const updateResource = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { id } = req.params;
     const updateData = req.body as UpdateResourceInput;
 
     const resource = await Resource.findByPk(id, {
-      include: [{ model: Branch, as: 'branch' }],
+      include: [{ model: Branch, as: "branch" }],
     });
 
     if (!resource) {
-      throw notFound('Resource not found');
+      throw notFound("Resource not found");
     }
 
     const branch = (resource as Resource & { branch: Branch }).branch;
     if (!hasAccessToBranch(req, resource.branchId, branch.tenantId)) {
-      throw forbidden('Access denied to this resource');
+      throw forbidden("Access denied to this resource");
     }
 
     await resource.update(updateData);
@@ -159,21 +187,25 @@ export const updateResource = async (req: AuthenticatedRequest, res: Response, n
 };
 
 // DELETE /resources/:id
-export const deleteResource = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+export const deleteResource = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { id } = req.params;
 
     const resource = await Resource.findByPk(id, {
-      include: [{ model: Branch, as: 'branch' }],
+      include: [{ model: Branch, as: "branch" }],
     });
 
     if (!resource) {
-      throw notFound('Resource not found');
+      throw notFound("Resource not found");
     }
 
     const branch = (resource as Resource & { branch: Branch }).branch;
     if (!hasAccessToBranch(req, resource.branchId, branch.tenantId)) {
-      throw forbidden('Access denied to this resource');
+      throw forbidden("Access denied to this resource");
     }
 
     // Soft delete
@@ -181,7 +213,7 @@ export const deleteResource = async (req: AuthenticatedRequest, res: Response, n
 
     res.json({
       success: true,
-      message: 'Resource deactivated successfully',
+      message: "Resource deactivated successfully",
     });
   } catch (error) {
     next(error);
@@ -189,19 +221,27 @@ export const deleteResource = async (req: AuthenticatedRequest, res: Response, n
 };
 
 // GET /resources/:resourceId/calendar
-export const getResourceCalendar = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getResourceCalendar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { resourceId } = req.params;
     const { from, to } = req.query;
 
-    const resource = await Resource.findByPk(resourceId);
+    const resource = await Resource.findByPk(resourceId, {
+      include: [{ model: Branch, as: "branch" }],
+    });
     if (!resource) {
-      throw notFound('Resource not found');
+      throw notFound("Resource not found");
     }
 
     // Default to today + 7 days if not provided
     const fromDate = from ? new Date(from as string) : new Date();
-    const toDate = to ? new Date(to as string) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const toDate = to
+      ? new Date(to as string)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     // Get all bookings for this resource in the date range
     const bookings = await Booking.findAll({
@@ -217,22 +257,42 @@ export const getResourceCalendar = async (req: Request, res: Response, next: Nex
           [Op.lte]: toDate,
         },
       },
-      order: [['startAt', 'ASC']],
-      attributes: ['id', 'startAt', 'endAt', 'status'],
+      order: [["startAt", "ASC"]],
+      attributes: ["bookingId", "startAt", "endAt", "status"],
+    });
+
+    // Get blocked slots for the branch (global + resource-specific)
+    const fromStr = fromDate.toISOString().split("T")[0];
+    const toStr = toDate.toISOString().split("T")[0];
+    const blockedSlots = await BlockedSlot.findAll({
+      where: {
+        branchId: resource.branchId,
+        date: { [Op.between]: [fromStr, toStr] },
+        [Op.or]: [{ resourceId: null }, { resourceId: parseInt(resourceId) }],
+      },
+      order: [
+        ["date", "ASC"],
+        ["startTime", "ASC"],
+      ],
     });
 
     res.json({
       success: true,
       data: {
-        resourceId: resource.id,
+        resourceId: resource.resourceId,
         resourceName: resource.name,
         from: fromDate,
         to: toDate,
-        bookings: bookings.map(b => ({
-          id: b.id,
+        bookings: bookings.map((b) => ({
+          id: b.bookingId,
           startAt: b.startAt,
           endAt: b.endAt,
           status: b.status,
+        })),
+        blockedSlots: blockedSlots.map((bs) => ({
+          date: bs.date,
+          startTime: bs.startTime,
+          endTime: bs.endTime,
         })),
       },
     });

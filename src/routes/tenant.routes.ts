@@ -1,26 +1,28 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   getAllTenants,
   getTenantById,
   createTenant,
   updateTenant,
   deleteTenant,
-} from '../controllers/tenant.controller';
+  getTenantDashboardStats,
+  getSuperAdminDashboardStats,
+} from "../controllers/tenant.controller";
 import {
   getBranchesByTenant,
   createBranch,
-} from '../controllers/branch.controller';
-import { authenticate } from '../middlewares/authenticate';
-import { authorize } from '../middlewares/authorize';
-import { validate } from '../middlewares/validate';
-import { RoleName } from '../interfaces';
+} from "../controllers/branch.controller";
+import { authenticate } from "../middlewares/authenticate";
+import { authorize } from "../middlewares/authorize";
+import { validate } from "../middlewares/validate";
+import { RoleName } from "../interfaces";
 import {
   createTenantSchema,
   updateTenantSchema,
   idParamSchema,
   tenantIdParamSchema,
   createBranchSchema,
-} from '../validators/schemas';
+} from "../validators/schemas";
 
 const router = Router();
 
@@ -29,61 +31,85 @@ router.use(authenticate);
 
 // GET /tenants
 router.get(
-  '/',
+  "/",
   authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN] }),
-  getAllTenants
+  getAllTenants,
 );
 
 // POST /tenants (super_admin only)
 router.post(
-  '/',
+  "/",
   authorize({ roles: [RoleName.SUPER_ADMIN] }),
   validate(createTenantSchema),
-  createTenant
+  createTenant,
+);
+
+// GET /tenants/super-admin-stats (must be before /:id)
+router.get(
+  "/super-admin-stats",
+  authorize({ roles: [RoleName.SUPER_ADMIN] }),
+  getSuperAdminDashboardStats,
 );
 
 // GET /tenants/:id
 router.get(
-  '/:id',
-  validate(idParamSchema, 'params'),
-  authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN], tenantScope: true }),
-  getTenantById
+  "/:id",
+  validate(idParamSchema, "params"),
+  authorize({
+    roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN],
+    tenantScope: true,
+  }),
+  getTenantById,
 );
 
 // PUT /tenants/:id (super_admin only)
 router.put(
-  '/:id',
+  "/:id",
   authorize({ roles: [RoleName.SUPER_ADMIN] }),
-  validate(idParamSchema, 'params'),
+  validate(idParamSchema, "params"),
   validate(updateTenantSchema),
-  updateTenant
+  updateTenant,
 );
 
 // DELETE /tenants/:id (super_admin only)
 router.delete(
-  '/:id',
+  "/:id",
   authorize({ roles: [RoleName.SUPER_ADMIN] }),
-  validate(idParamSchema, 'params'),
-  deleteTenant
+  validate(idParamSchema, "params"),
+  deleteTenant,
+);
+
+// GET /tenants/:id/dashboard-stats
+router.get(
+  "/:id/dashboard-stats",
+  validate(idParamSchema, "params"),
+  authorize({
+    roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN],
+    tenantScope: true,
+  }),
+  getTenantDashboardStats,
 );
 
 // ========== TENANT BRANCHES ROUTES ==========
 
 // GET /tenants/:tenantId/branches
 router.get(
-  '/:tenantId/branches',
-  validate(tenantIdParamSchema, 'params'),
+  "/:tenantId/branches",
+  validate(tenantIdParamSchema, "params"),
   authorize({ tenantScope: true }),
-  getBranchesByTenant
+  getBranchesByTenant,
 );
 
 // POST /tenants/:tenantId/branches
 router.post(
-  '/:tenantId/branches',
-  validate(tenantIdParamSchema, 'params'),
+  "/:tenantId/branches",
+  validate(tenantIdParamSchema, "params"),
   validate(createBranchSchema),
-  authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN], tenantScope: true }),
-  createBranch
+  authorize({
+    roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN],
+    tenantScope: true,
+  }),
+  createBranch,
 );
 
 export default router;

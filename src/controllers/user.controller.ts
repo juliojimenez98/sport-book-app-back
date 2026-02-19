@@ -95,7 +95,7 @@ export const getAllUsers = async (
         return;
       }
 
-      userWhere.id = { [Op.in]: userIds };
+      userWhere.userId = { [Op.in]: userIds };
     }
 
     const { count, rows: users } = await AppUser.findAndCountAll({
@@ -117,17 +117,17 @@ export const getAllUsers = async (
             {
               model: Tenant,
               as: "tenant",
-              attributes: ["id", "name", "slug"],
+              attributes: ["tenantId", "name", "slug"],
             },
             {
               model: Branch,
               as: "branch",
-              attributes: ["id", "name", "slug"],
+              attributes: ["branchId", "name", "slug"],
               include: [
                 {
                   model: Tenant,
                   as: "tenant",
-                  attributes: ["id", "name", "slug"],
+                  attributes: ["tenantId", "name", "slug"],
                 },
               ],
             },
@@ -174,12 +174,12 @@ export const getUserById = async (
             {
               model: Tenant,
               as: "tenant",
-              attributes: ["id", "name"],
+              attributes: ["tenantId", "name"],
             },
             {
               model: Branch,
               as: "branch",
-              attributes: ["id", "name"],
+              attributes: ["branchId", "name"],
             },
           ],
         },
@@ -339,7 +339,7 @@ export const getAllRoles = async (
 ): Promise<void> => {
   try {
     const roles = await Role.findAll({
-      order: [["id", "ASC"]],
+      order: [["roleId", "ASC"]],
     });
 
     res.json({

@@ -2,7 +2,7 @@ import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../db/connection";
 
 interface BranchAttributes {
-  id: number;
+  branchId: number;
   tenantId: number;
   name: string;
   slug: string;
@@ -19,6 +19,8 @@ interface BranchAttributes {
   hasCafeteria: boolean;
   hasEquipmentRental: boolean;
   amenitiesDescription?: string;
+  // Booking settings
+  requiresApproval: boolean;
   // Status
   isActive: boolean;
   createdAt?: Date;
@@ -27,7 +29,7 @@ interface BranchAttributes {
 
 interface BranchCreationAttributes extends Optional<
   BranchAttributes,
-  | "id"
+  | "branchId"
   | "isActive"
   | "timezone"
   | "hasParking"
@@ -38,13 +40,14 @@ interface BranchCreationAttributes extends Optional<
   | "hasCafeteria"
   | "hasEquipmentRental"
   | "amenitiesDescription"
+  | "requiresApproval"
 > {}
 
 class Branch
   extends Model<BranchAttributes, BranchCreationAttributes>
   implements BranchAttributes
 {
-  public id!: number;
+  public branchId!: number;
   public tenantId!: number;
   public name!: string;
   public slug!: string;
@@ -61,6 +64,8 @@ class Branch
   public hasCafeteria!: boolean;
   public hasEquipmentRental!: boolean;
   public amenitiesDescription?: string;
+  // Booking settings
+  public requiresApproval!: boolean;
   // Status
   public isActive!: boolean;
   public readonly createdAt!: Date;
@@ -69,10 +74,11 @@ class Branch
 
 Branch.init(
   {
-    id: {
+    branchId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     tenantId: {
       type: DataTypes.INTEGER,
@@ -157,6 +163,12 @@ Branch.init(
       type: DataTypes.TEXT,
       allowNull: true,
       field: "amenities_description",
+    },
+    requiresApproval: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: "requires_approval",
     },
     isActive: {
       type: DataTypes.BOOLEAN,

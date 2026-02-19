@@ -2,7 +2,7 @@ import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../db/connection";
 
 interface TenantAttributes {
-  id: number;
+  tenantId: number;
   name: string;
   slug: string;
   email?: string;
@@ -18,14 +18,14 @@ interface TenantAttributes {
 
 interface TenantCreationAttributes extends Optional<
   TenantAttributes,
-  "id" | "isActive"
+  "tenantId" | "isActive"
 > {}
 
 class Tenant
   extends Model<TenantAttributes, TenantCreationAttributes>
   implements TenantAttributes
 {
-  public id!: number;
+  public tenantId!: number;
   public name!: string;
   public slug!: string;
   public email?: string;
@@ -41,10 +41,11 @@ class Tenant
 
 Tenant.init(
   {
-    id: {
+    tenantId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     name: {
       type: DataTypes.STRING(100),

@@ -1,9 +1,9 @@
-import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '../db/connection';
-import { RoleScope, RoleScopeType } from '../interfaces';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../db/connection";
+import { RoleScope, RoleScopeType } from "../interfaces";
 
 interface UserRoleAttributes {
-  id: number;
+  userRoleId: number;
   userId: number;
   roleId: number;
   scope: RoleScopeType;
@@ -13,10 +13,16 @@ interface UserRoleAttributes {
   updatedAt?: Date;
 }
 
-interface UserRoleCreationAttributes extends Optional<UserRoleAttributes, 'id'> {}
+interface UserRoleCreationAttributes extends Optional<
+  UserRoleAttributes,
+  "userRoleId"
+> {}
 
-class UserRole extends Model<UserRoleAttributes, UserRoleCreationAttributes> implements UserRoleAttributes {
-  public id!: number;
+class UserRole
+  extends Model<UserRoleAttributes, UserRoleCreationAttributes>
+  implements UserRoleAttributes
+{
+  public userRoleId!: number;
   public userId!: number;
   public roleId!: number;
   public scope!: RoleScopeType;
@@ -28,32 +34,33 @@ class UserRole extends Model<UserRoleAttributes, UserRoleCreationAttributes> imp
 
 UserRole.init(
   {
-    id: {
+    userRoleId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'user_id',
+      field: "user_id",
       references: {
-        model: 'app_user',
-        key: 'id',
+        model: "app_user",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     roleId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'role_id',
+      field: "role_id",
       references: {
-        model: 'role',
-        key: 'id',
+        model: "role",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT',
+      onUpdate: "CASCADE",
+      onDelete: "RESTRICT",
     },
     scope: {
       type: DataTypes.STRING(20),
@@ -65,38 +72,38 @@ UserRole.init(
     tenantId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'tenant_id',
+      field: "tenant_id",
       references: {
-        model: 'tenant',
-        key: 'id',
+        model: "tenant",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     branchId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'branch_id',
+      field: "branch_id",
       references: {
-        model: 'branch',
-        key: 'id',
+        model: "branch",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
   },
   {
     sequelize,
-    tableName: 'user_role',
+    tableName: "user_role",
     timestamps: true,
     underscored: true,
     indexes: [
       {
         unique: true,
-        fields: ['user_id', 'role_id', 'tenant_id', 'branch_id'],
+        fields: ["user_id", "role_id", "tenant_id", "branch_id"],
       },
     ],
-  }
+  },
 );
 
 export default UserRole;

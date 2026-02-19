@@ -1,8 +1,8 @@
-import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '../db/connection';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../db/connection";
 
 interface BranchSportAttributes {
-  id: number;
+  branchSportId: number;
   branchId: number;
   sportId: number;
   isActive: boolean;
@@ -10,10 +10,16 @@ interface BranchSportAttributes {
   updatedAt?: Date;
 }
 
-interface BranchSportCreationAttributes extends Optional<BranchSportAttributes, 'id' | 'isActive'> {}
+interface BranchSportCreationAttributes extends Optional<
+  BranchSportAttributes,
+  "branchSportId" | "isActive"
+> {}
 
-class BranchSport extends Model<BranchSportAttributes, BranchSportCreationAttributes> implements BranchSportAttributes {
-  public id!: number;
+class BranchSport
+  extends Model<BranchSportAttributes, BranchSportCreationAttributes>
+  implements BranchSportAttributes
+{
+  public branchSportId!: number;
   public branchId!: number;
   public sportId!: number;
   public isActive!: boolean;
@@ -23,52 +29,53 @@ class BranchSport extends Model<BranchSportAttributes, BranchSportCreationAttrib
 
 BranchSport.init(
   {
-    id: {
+    branchSportId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     branchId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'branch_id',
+      field: "branch_id",
       references: {
-        model: 'branch',
-        key: 'id',
+        model: "branch",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
     },
     sportId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      field: 'sport_id',
+      field: "sport_id",
       references: {
-        model: 'sport',
-        key: 'id',
+        model: "sport",
+        key: "id",
       },
-      onUpdate: 'CASCADE',
-      onDelete: 'RESTRICT',
+      onUpdate: "CASCADE",
+      onDelete: "RESTRICT",
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
-      field: 'is_active',
+      field: "is_active",
     },
   },
   {
     sequelize,
-    tableName: 'branch_sport',
+    tableName: "branch_sport",
     timestamps: true,
     underscored: true,
     indexes: [
       {
         unique: true,
-        fields: ['branch_id', 'sport_id'],
+        fields: ["branch_id", "sport_id"],
       },
     ],
-  }
+  },
 );
 
 export default BranchSport;

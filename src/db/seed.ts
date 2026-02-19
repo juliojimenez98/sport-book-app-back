@@ -90,7 +90,7 @@ const seedDatabase = async (): Promise<void> => {
 
     // Tenant 1 branches
     const branch1T1 = await Branch.create({
-      tenantId: tenant1.id,
+      tenantId: tenant1.tenantId,
       name: "Sucursal Norte",
       slug: "sucursal-norte",
       address: "Av. Norte 123, Col. Centro",
@@ -100,7 +100,7 @@ const seedDatabase = async (): Promise<void> => {
 
     // Tenant 2 branches
     const branch1T2 = await Branch.create({
-      tenantId: tenant2.id,
+      tenantId: tenant2.tenantId,
       name: "Elite Centro",
       slug: "elite-centro",
       address: "Calle Principal 456, Col. Roma",
@@ -109,7 +109,7 @@ const seedDatabase = async (): Promise<void> => {
     });
 
     const branch2T2 = await Branch.create({
-      tenantId: tenant2.id,
+      tenantId: tenant2.tenantId,
       name: "Elite Sur",
       slug: "elite-sur",
       address: "Av. Sur 789, Col. Del Valle",
@@ -133,24 +133,24 @@ const seedDatabase = async (): Promise<void> => {
       await BranchHours.bulkCreate(hours);
     };
 
-    await createBranchHours(branch1T1.id);
-    await createBranchHours(branch1T2.id);
-    await createBranchHours(branch2T2.id);
+    await createBranchHours(branch1T1.branchId);
+    await createBranchHours(branch1T2.branchId);
+    await createBranchHours(branch2T2.branchId);
 
     // ============ BRANCH SPORTS ============
     console.log("Creating branch sports...");
     await BranchSport.bulkCreate([
       // Tenant 1 - Branch Norte: Fútbol y Tenis
-      { branchId: branch1T1.id, sportId: futbol.id },
-      { branchId: branch1T1.id, sportId: tenis.id },
+      { branchId: branch1T1.branchId, sportId: futbol.sportId },
+      { branchId: branch1T1.branchId, sportId: tenis.sportId },
       // Tenant 2 - Elite Centro: Pádel, Tenis, Básquetbol
-      { branchId: branch1T2.id, sportId: padel.id },
-      { branchId: branch1T2.id, sportId: tenis.id },
-      { branchId: branch1T2.id, sportId: basquetbol.id },
+      { branchId: branch1T2.branchId, sportId: padel.sportId },
+      { branchId: branch1T2.branchId, sportId: tenis.sportId },
+      { branchId: branch1T2.branchId, sportId: basquetbol.sportId },
       // Tenant 2 - Elite Sur: Fútbol, Voleibol, Pádel
-      { branchId: branch2T2.id, sportId: futbol.id },
-      { branchId: branch2T2.id, sportId: voleibol.id },
-      { branchId: branch2T2.id, sportId: padel.id },
+      { branchId: branch2T2.branchId, sportId: futbol.sportId },
+      { branchId: branch2T2.branchId, sportId: voleibol.sportId },
+      { branchId: branch2T2.branchId, sportId: padel.sportId },
     ]);
 
     // ============ RESOURCES (CANCHAS) ============
@@ -159,16 +159,16 @@ const seedDatabase = async (): Promise<void> => {
     // Tenant 1 - 2 canchas
     await Resource.bulkCreate([
       {
-        branchId: branch1T1.id,
-        sportId: futbol.id,
+        branchId: branch1T1.branchId,
+        sportId: futbol.sportId,
         name: "Cancha Fútbol 1",
         description: "Cancha de fútbol 7 con pasto sintético",
         pricePerHour: 25000,
         currency: "CLP",
       },
       {
-        branchId: branch1T1.id,
-        sportId: tenis.id,
+        branchId: branch1T1.branchId,
+        sportId: tenis.sportId,
         name: "Cancha Tenis A",
         description: "Cancha de tenis con superficie dura",
         pricePerHour: 12000,
@@ -180,24 +180,24 @@ const seedDatabase = async (): Promise<void> => {
     await Resource.bulkCreate([
       // Elite Centro - 3 canchas
       {
-        branchId: branch1T2.id,
-        sportId: padel.id,
+        branchId: branch1T2.branchId,
+        sportId: padel.sportId,
         name: "Cancha Pádel 1",
         description: "Cancha de pádel techada",
         pricePerHour: 18000,
         currency: "CLP",
       },
       {
-        branchId: branch1T2.id,
-        sportId: padel.id,
+        branchId: branch1T2.branchId,
+        sportId: padel.sportId,
         name: "Cancha Pádel 2",
         description: "Cancha de pádel al aire libre",
         pricePerHour: 15000,
         currency: "CLP",
       },
       {
-        branchId: branch1T2.id,
-        sportId: basquetbol.id,
+        branchId: branch1T2.branchId,
+        sportId: basquetbol.sportId,
         name: "Cancha Básquetbol",
         description: "Cancha de básquetbol profesional",
         pricePerHour: 20000,
@@ -205,16 +205,16 @@ const seedDatabase = async (): Promise<void> => {
       },
       // Elite Sur - 2 canchas
       {
-        branchId: branch2T2.id,
-        sportId: futbol.id,
+        branchId: branch2T2.branchId,
+        sportId: futbol.sportId,
         name: "Cancha Fútbol 5",
         description: "Cancha de fútbol rápido",
         pricePerHour: 18000,
         currency: "CLP",
       },
       {
-        branchId: branch2T2.id,
-        sportId: voleibol.id,
+        branchId: branch2T2.branchId,
+        sportId: voleibol.sportId,
         name: "Cancha Voleibol",
         description: "Cancha de voleibol de playa",
         pricePerHour: 12000,
@@ -290,39 +290,39 @@ const seedDatabase = async (): Promise<void> => {
     await UserRole.bulkCreate([
       // Super Admin - global
       {
-        userId: superAdmin.id,
-        roleId: superAdminRole.id,
+        userId: superAdmin.userId,
+        roleId: superAdminRole.roleId,
         scope: RoleScope.GLOBAL,
       },
       // Tenant Admin 1 - tenant scope
       {
-        userId: tenantAdmin1.id,
-        roleId: tenantAdminRole.id,
+        userId: tenantAdmin1.userId,
+        roleId: tenantAdminRole.roleId,
         scope: RoleScope.TENANT,
-        tenantId: tenant1.id,
+        tenantId: tenant1.tenantId,
       },
       // Tenant Admin 2 - tenant scope
       {
-        userId: tenantAdmin2.id,
-        roleId: tenantAdminRole.id,
+        userId: tenantAdmin2.userId,
+        roleId: tenantAdminRole.roleId,
         scope: RoleScope.TENANT,
-        tenantId: tenant2.id,
+        tenantId: tenant2.tenantId,
       },
       // Branch Admin - branch scope
       {
-        userId: branchAdmin.id,
-        roleId: branchAdminRole.id,
+        userId: branchAdmin.userId,
+        roleId: branchAdminRole.roleId,
         scope: RoleScope.BRANCH,
-        tenantId: tenant2.id,
-        branchId: branch1T2.id,
+        tenantId: tenant2.tenantId,
+        branchId: branch1T2.branchId,
       },
       // Staff - branch scope
       {
-        userId: staff.id,
-        roleId: staffRole.id,
+        userId: staff.userId,
+        roleId: staffRole.roleId,
         scope: RoleScope.BRANCH,
-        tenantId: tenant2.id,
-        branchId: branch2T2.id,
+        tenantId: tenant2.tenantId,
+        branchId: branch2T2.branchId,
       },
     ]);
 

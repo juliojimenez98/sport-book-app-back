@@ -1,19 +1,22 @@
-import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '../db/connection';
-import { RoleName, RoleNameType } from '../interfaces';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../db/connection";
+import { RoleName, RoleNameType } from "../interfaces";
 
 interface RoleAttributes {
-  id: number;
+  roleId: number;
   name: RoleNameType;
   description?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface RoleCreationAttributes extends Optional<RoleAttributes, 'id'> {}
+interface RoleCreationAttributes extends Optional<RoleAttributes, "roleId"> {}
 
-class Role extends Model<RoleAttributes, RoleCreationAttributes> implements RoleAttributes {
-  public id!: number;
+class Role
+  extends Model<RoleAttributes, RoleCreationAttributes>
+  implements RoleAttributes
+{
+  public roleId!: number;
   public name!: RoleNameType;
   public description?: string;
   public readonly createdAt!: Date;
@@ -22,17 +25,25 @@ class Role extends Model<RoleAttributes, RoleCreationAttributes> implements Role
 
 Role.init(
   {
-    id: {
+    roleId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     name: {
       type: DataTypes.STRING(50),
       allowNull: false,
       unique: true,
       validate: {
-        isIn: [[RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN, RoleName.BRANCH_ADMIN, RoleName.STAFF]],
+        isIn: [
+          [
+            RoleName.SUPER_ADMIN,
+            RoleName.TENANT_ADMIN,
+            RoleName.BRANCH_ADMIN,
+            RoleName.STAFF,
+          ],
+        ],
       },
     },
     description: {
@@ -42,10 +53,10 @@ Role.init(
   },
   {
     sequelize,
-    tableName: 'role',
+    tableName: "role",
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 export default Role;

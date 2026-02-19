@@ -8,7 +8,7 @@ import {
 } from "../interfaces";
 
 interface BookingAttributes {
-  id: number;
+  bookingId: number;
   tenantId: number;
   branchId: number;
   resourceId: number;
@@ -27,14 +27,14 @@ interface BookingAttributes {
 
 interface BookingCreationAttributes extends Optional<
   BookingAttributes,
-  "id" | "status" | "source" | "currency"
+  "bookingId" | "status" | "source" | "currency"
 > {}
 
 class Booking
   extends Model<BookingAttributes, BookingCreationAttributes>
   implements BookingAttributes
 {
-  public id!: number;
+  public bookingId!: number;
   public tenantId!: number;
   public branchId!: number;
   public resourceId!: number;
@@ -53,10 +53,11 @@ class Booking
 
 Booking.init(
   {
-    id: {
+    bookingId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     tenantId: {
       type: DataTypes.INTEGER,

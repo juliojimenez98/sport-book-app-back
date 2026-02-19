@@ -2,7 +2,7 @@ import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../db/connection";
 
 interface ResourceAttributes {
-  id: number;
+  resourceId: number;
   branchId: number;
   sportId: number;
   name: string;
@@ -16,14 +16,14 @@ interface ResourceAttributes {
 
 interface ResourceCreationAttributes extends Optional<
   ResourceAttributes,
-  "id" | "isActive" | "currency"
+  "resourceId" | "isActive" | "currency"
 > {}
 
 class Resource
   extends Model<ResourceAttributes, ResourceCreationAttributes>
   implements ResourceAttributes
 {
-  public id!: number;
+  public resourceId!: number;
   public branchId!: number;
   public sportId!: number;
   public name!: string;
@@ -37,10 +37,11 @@ class Resource
 
 Resource.init(
   {
-    id: {
+    resourceId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     branchId: {
       type: DataTypes.INTEGER,

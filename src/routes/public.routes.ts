@@ -17,7 +17,7 @@ router.get(
       const tenants = await Tenant.findAll({
         where: { isActive: true },
         attributes: [
-          "id",
+          "tenantId",
           "name",
           "slug",
           "email",
@@ -33,7 +33,7 @@ router.get(
             as: "branches",
             where: { isActive: true },
             required: false,
-            attributes: ["id", "name", "slug", "address", "phone"],
+            attributes: ["branchId", "name", "slug", "address", "phone"],
           },
         ],
         order: [["name", "ASC"]],
@@ -59,7 +59,7 @@ router.get(
       const tenant = await Tenant.findOne({
         where: { slug, isActive: true },
         attributes: [
-          "id",
+          "tenantId",
           "name",
           "slug",
           "email",
@@ -76,7 +76,7 @@ router.get(
             where: { isActive: true },
             required: false,
             attributes: [
-              "id",
+              "branchId",
               "name",
               "slug",
               "address",
@@ -121,7 +121,7 @@ router.get(
       const tenant = await Tenant.findOne({
         where: { slug: tenantSlug, isActive: true },
         attributes: [
-          "id",
+          "tenantId",
           "name",
           "slug",
           "primaryColor",
@@ -138,9 +138,9 @@ router.get(
       }
 
       const branch = await Branch.findOne({
-        where: { slug: branchSlug, tenantId: tenant.id, isActive: true },
+        where: { slug: branchSlug, tenantId: tenant.tenantId, isActive: true },
         attributes: [
-          "id",
+          "branchId",
           "name",
           "slug",
           "address",
@@ -164,7 +164,7 @@ router.get(
               {
                 model: Sport,
                 as: "sport",
-                attributes: ["id", "name"],
+                attributes: ["sportId", "name"],
               },
             ],
           },
@@ -204,7 +204,7 @@ router.get(
             as: "tenant",
             where: { isActive: true },
             attributes: [
-              "id",
+              "tenantId",
               "name",
               "slug",
               "primaryColor",
@@ -265,18 +265,18 @@ router.get(
           {
             model: Sport,
             as: "sport",
-            attributes: ["id", "name"],
+            attributes: ["sportId", "name"],
           },
           {
             model: Branch,
             as: "branch",
-            attributes: ["id", "name", "slug"],
+            attributes: ["branchId", "name", "slug"],
             include: [
               {
                 model: Tenant,
                 as: "tenant",
                 attributes: [
-                  "id",
+                  "tenantId",
                   "name",
                   "slug",
                   "primaryColor",
@@ -309,20 +309,20 @@ router.get(
 
       const resource = await Resource.findOne({
         where: {
-          id: parseInt(id, 10),
+          resourceId: parseInt(id, 10),
           isActive: true,
         },
         include: [
           {
             model: Sport,
             as: "sport",
-            attributes: ["id", "name"],
+            attributes: ["sportId", "name"],
           },
           {
             model: Branch,
             as: "branch",
             attributes: [
-              "id",
+              "branchId",
               "name",
               "slug",
               "address",
@@ -335,13 +335,14 @@ router.get(
               "hasCafeteria",
               "hasEquipmentRental",
               "amenitiesDescription",
+              "requiresApproval",
             ],
             include: [
               {
                 model: Tenant,
                 as: "tenant",
                 attributes: [
-                  "id",
+                  "tenantId",
                   "name",
                   "slug",
                   "primaryColor",

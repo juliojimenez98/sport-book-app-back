@@ -6,6 +6,7 @@ import {
   Sport,
   BranchHours,
   Resource,
+  BlockedSlot,
 } from "../models/associations";
 import { AuthenticatedRequest } from "../interfaces";
 import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
@@ -16,6 +17,7 @@ import {
 } from "../middlewares/authorize";
 import { generateSlug } from "../helpers/utils";
 import { CreateBranchInput, UpdateBranchInput } from "../validators/schemas";
+import { Op } from "sequelize";
 
 // GET /tenants/:tenantId/branches
 export const getBranchesByTenant = async (
@@ -81,7 +83,7 @@ export const getAllBranches = async (
     let whereClause: Record<string, unknown> = {};
 
     if (accessibleBranchIds !== null) {
-      whereClause.id = accessibleBranchIds;
+      whereClause.branchId = accessibleBranchIds;
     }
     if (accessibleTenantIds !== null) {
       whereClause.tenantId = accessibleTenantIds;
@@ -96,7 +98,7 @@ export const getAllBranches = async (
         {
           model: Tenant,
           as: "tenant",
-          attributes: ["id", "name", "slug"],
+          attributes: ["tenantId", "name", "slug"],
         },
         {
           model: Sport,
@@ -135,7 +137,7 @@ export const getBranchById = async (
         {
           model: Tenant,
           as: "tenant",
-          attributes: ["id", "name", "slug"],
+          attributes: ["tenantId", "name", "slug"],
         },
         {
           model: Sport,
@@ -214,49 +216,49 @@ export const createBranch = async (
     // Create default branch hours (Mon-Sat 8:00-22:00, Sun closed)
     const defaultHours = [
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 0,
         openTime: "08:00",
         closeTime: "22:00",
         isClosed: true,
       }, // Sunday
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 1,
         openTime: "08:00",
         closeTime: "22:00",
         isClosed: false,
       },
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 2,
         openTime: "08:00",
         closeTime: "22:00",
         isClosed: false,
       },
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 3,
         openTime: "08:00",
         closeTime: "22:00",
         isClosed: false,
       },
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 4,
         openTime: "08:00",
         closeTime: "22:00",
         isClosed: false,
       },
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 5,
         openTime: "08:00",
         closeTime: "22:00",
         isClosed: false,
       },
       {
-        branchId: branch.id,
+        branchId: branch.branchId,
         dayOfWeek: 6,
         openTime: "08:00",
         closeTime: "22:00",
@@ -427,6 +429,226 @@ export const removeSportFromBranch = async (
     res.json({
       success: true,
       message: "Sport removed from branch successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ========== BRANCH HOURS ENDPOINTS ==========
+
+// GET /branches/:branchId/hours
+export const getBranchHours = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { branchId } = req.params;
+
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      throw notFound("Branch not found");
+    }
+
+    const hours = await BranchHours.findAll({
+      where: { branchId: parseInt(branchId) },
+      order: [["dayOfWeek", "ASC"]],
+    });
+
+    res.json({
+      success: true,
+      data: hours,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /branches/:branchId/hours
+export const updateBranchHours = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { branchId } = req.params;
+    const { hours } = req.body;
+
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      throw notFound("Branch not found");
+    }
+
+    if (!Array.isArray(hours) || hours.length === 0) {
+      throw badRequest("Hours array is required");
+    }
+
+    // Validate each entry
+    for (const h of hours) {
+      if (h.dayOfWeek < 0 || h.dayOfWeek > 6) {
+        throw badRequest(`Invalid day of week: ${h.dayOfWeek}`);
+      }
+      if (!h.isClosed && (!h.openTime || !h.closeTime)) {
+        throw badRequest(
+          `Open and close times required for day ${h.dayOfWeek}`,
+        );
+      }
+    }
+
+    // Upsert all hours
+    for (const h of hours) {
+      const [record] = await BranchHours.findOrCreate({
+        where: { branchId: parseInt(branchId), dayOfWeek: h.dayOfWeek },
+        defaults: {
+          branchId: parseInt(branchId),
+          dayOfWeek: h.dayOfWeek,
+          openTime: h.openTime || "08:00",
+          closeTime: h.closeTime || "22:00",
+          isClosed: h.isClosed || false,
+        },
+      });
+
+      await record.update({
+        openTime: h.openTime || "08:00",
+        closeTime: h.closeTime || "22:00",
+        isClosed: h.isClosed || false,
+      });
+    }
+
+    // Return updated hours
+    const updatedHours = await BranchHours.findAll({
+      where: { branchId: parseInt(branchId) },
+      order: [["dayOfWeek", "ASC"]],
+    });
+
+    res.json({
+      success: true,
+      data: updatedHours,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ========== BLOCKED SLOTS ENDPOINTS ==========
+
+// GET /branches/:branchId/blocked-slots
+export const getBlockedSlots = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { branchId } = req.params;
+    const { from, to } = req.query;
+
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      throw notFound("Branch not found");
+    }
+
+    const whereClause: any = { branchId: parseInt(branchId) };
+
+    if (from) {
+      whereClause.date = { ...whereClause.date, [Op.gte]: from as string };
+    }
+    if (to) {
+      whereClause.date = { ...whereClause.date, [Op.lte]: to as string };
+    }
+
+    const blockedSlots = await BlockedSlot.findAll({
+      where: whereClause,
+      order: [
+        ["date", "ASC"],
+        ["startTime", "ASC"],
+      ],
+      include: [
+        {
+          model: Resource,
+          as: "resource",
+          attributes: ["resourceId", "name"],
+        },
+      ],
+    });
+
+    res.json({
+      success: true,
+      data: blockedSlots,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /branches/:branchId/blocked-slots
+export const createBlockedSlot = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { branchId } = req.params;
+    const { date, startTime, endTime, reason, resourceId } = req.body;
+
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      throw notFound("Branch not found");
+    }
+
+    if (!date || !startTime || !endTime) {
+      throw badRequest("Date, start time and end time are required");
+    }
+
+    // Validate resource belongs to this branch if specified
+    if (resourceId) {
+      const resource = await Resource.findByPk(resourceId);
+      if (!resource || resource.branchId !== parseInt(branchId)) {
+        throw badRequest("Resource does not belong to this branch");
+      }
+    }
+
+    const blockedSlot = await BlockedSlot.create({
+      branchId: parseInt(branchId),
+      resourceId: resourceId || null,
+      date,
+      startTime,
+      endTime,
+      reason,
+      createdBy: req.user?.userId,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: blockedSlot,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /branches/:branchId/blocked-slots/:id
+export const deleteBlockedSlot = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { branchId, id } = req.params;
+
+    const blockedSlot = await BlockedSlot.findOne({
+      where: { blockedSlotId: parseInt(id), branchId: parseInt(branchId) },
+    });
+
+    if (!blockedSlot) {
+      throw notFound("Blocked slot not found");
+    }
+
+    await blockedSlot.destroy();
+
+    res.json({
+      success: true,
+      message: "Blocked slot deleted",
     });
   } catch (error) {
     next(error);

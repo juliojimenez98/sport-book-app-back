@@ -1,8 +1,8 @@
-import { Model, DataTypes, Optional } from 'sequelize';
-import sequelize from '../db/connection';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../db/connection";
 
 interface SportAttributes {
-  id: number;
+  sportId: number;
   name: string;
   description?: string;
   iconUrl?: string;
@@ -11,10 +11,16 @@ interface SportAttributes {
   updatedAt?: Date;
 }
 
-interface SportCreationAttributes extends Optional<SportAttributes, 'id' | 'isActive'> {}
+interface SportCreationAttributes extends Optional<
+  SportAttributes,
+  "sportId" | "isActive"
+> {}
 
-class Sport extends Model<SportAttributes, SportCreationAttributes> implements SportAttributes {
-  public id!: number;
+class Sport
+  extends Model<SportAttributes, SportCreationAttributes>
+  implements SportAttributes
+{
+  public sportId!: number;
   public name!: string;
   public description?: string;
   public iconUrl?: string;
@@ -25,10 +31,11 @@ class Sport extends Model<SportAttributes, SportCreationAttributes> implements S
 
 Sport.init(
   {
-    id: {
+    sportId: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
+      field: "id",
     },
     name: {
       type: DataTypes.STRING(50),
@@ -42,21 +49,21 @@ Sport.init(
     iconUrl: {
       type: DataTypes.STRING(500),
       allowNull: true,
-      field: 'icon_url',
+      field: "icon_url",
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
-      field: 'is_active',
+      field: "is_active",
     },
   },
   {
     sequelize,
-    tableName: 'sport',
+    tableName: "sport",
     timestamps: true,
     underscored: true,
-  }
+  },
 );
 
 export default Sport;

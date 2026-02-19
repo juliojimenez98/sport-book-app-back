@@ -58,7 +58,7 @@ export const register = async (
       success: true,
       message: "User registered successfully",
       data: {
-        id: user.id,
+        id: user.userId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -123,7 +123,7 @@ export const login = async (
 
     // Generate tokens
     const tokenPayload: TokenPayload = {
-      userId: user.id,
+      userId: user.userId,
       email: user.email,
       roles,
     };
@@ -134,7 +134,7 @@ export const login = async (
     // Store refresh token hash
     const tokenHash = await hashToken(refreshToken);
     await RefreshToken.create({
-      userId: user.id,
+      userId: user.userId,
       tokenHash,
       expiresAt: getRefreshTokenExpiry(),
       userAgent: req.headers["user-agent"],
@@ -147,7 +147,7 @@ export const login = async (
         accessToken,
         refreshToken,
         user: {
-          id: user.id,
+          id: user.userId,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -204,7 +204,7 @@ export const refresh = async (
 
     // Find and validate stored refresh token
     const storedTokens = await RefreshToken.findAll({
-      where: { userId: user.id, revokedAt: null as unknown as undefined },
+      where: { userId: user.userId, revokedAt: null as unknown as undefined },
     });
 
     let validStoredToken: RefreshToken | null = null;
@@ -239,7 +239,7 @@ export const refresh = async (
 
     // Generate new tokens
     const tokenPayload: TokenPayload = {
-      userId: user.id,
+      userId: user.userId,
       email: user.email,
       roles,
     };
@@ -250,7 +250,7 @@ export const refresh = async (
     // Store new refresh token
     const newTokenHash = await hashToken(newRefreshToken);
     await RefreshToken.create({
-      userId: user.id,
+      userId: user.userId,
       tokenHash: newTokenHash,
       expiresAt: getRefreshTokenExpiry(),
       userAgent: req.headers["user-agent"],
@@ -349,7 +349,7 @@ export const me = async (
     res.json({
       success: true,
       data: {
-        id: user.id,
+        id: user.userId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
