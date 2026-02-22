@@ -5,13 +5,16 @@ import {
   assignRole,
   removeRole,
   getAllRoles,
+  createUser,
 } from '../controllers/user.controller';
+
 import { getMyBookings } from '../controllers/booking.controller';
 import { authenticate } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
 import { validate } from '../middlewares/validate';
 import { RoleName } from '../interfaces';
-import { assignRoleSchema } from '../validators/schemas';
+import { assignRoleSchema, createUserSchema } from '../validators/schemas';
+
 
 const router = Router();
 
@@ -36,6 +39,14 @@ router.get(
   '/',
   authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN] }),
   getAllUsers
+);
+
+// POST /users (tenant-admin creates a user)
+router.post(
+  '/',
+  authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN] }),
+  validate(createUserSchema),
+  createUser
 );
 
 // GET /users/:id

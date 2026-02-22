@@ -7,6 +7,9 @@ import {
   BranchHours,
   Resource,
   BlockedSlot,
+  Booking,
+  UserRole,
+  AppUser,
 } from "../models/associations";
 import { AuthenticatedRequest } from "../interfaces";
 import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
@@ -14,6 +17,7 @@ import {
   hasAccessToTenant,
   getAccessibleTenantIds,
   getAccessibleBranchIds,
+  hasAccessToBranch,
 } from "../middlewares/authorize";
 import { generateSlug } from "../helpers/utils";
 import { CreateBranchInput, UpdateBranchInput } from "../validators/schemas";
@@ -656,3 +660,143 @@ export const deleteBlockedSlot = async (
     next(error);
   }
 };
+
+// GET /branches/:branchId/dashboard-stats
+export const getBranchDashboardStats = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { branchId } = req.params;
+
+    const branch = await Branch.findByPk(branchId);
+    if (!branch) {
+      throw notFound("Branch not found");
+    }
+
+    if (!hasAccessToBranch(req, parseInt(branchId), branch.tenantId)) {
+      throw forbidden("Access denied to this branch");
+    }
+
+    // Resources
+    const totalResources = await Resource.count({
+      where: { branchId: parseInt(branchId) },
+    });
+
+    const activeResources = await Resource.count({
+      where: { branchId: parseInt(branchId), isActive: true },
+    });
+
+    // Today's bookings
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayBookings = await Booking.count({
+      where: {
+        branchId: parseInt(branchId),
+        startAt: { [Op.gte]: today, [Op.lt]: tomorrow },
+        status: { [Op.notIn]: ["cancelled", "rejected"] },
+      },
+    });
+
+    const pendingBookings = await Booking.count({
+      where: {
+        branchId: parseInt(branchId),
+        startAt: { [Op.gte]: today },
+        status: "pending",
+      },
+    });
+
+    // Monthly bookings
+    const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthlyBookings = await Booking.count({
+      where: {
+        branchId: parseInt(branchId),
+        startAt: { [Op.gte]: firstOfMonth },
+        status: { [Op.notIn]: ["cancelled", "rejected"] },
+      },
+    });
+
+    // Upcoming bookings (next 10)
+    const upcomingBookings = await Booking.findAll({
+      where: {
+        branchId: parseInt(branchId),
+        startAt: { [Op.gte]: new Date() },
+        status: { [Op.in]: ["confirmed", "pending"] },
+      },
+      order: [["startAt", "ASC"]],
+      limit: 10,
+      include: [
+        {
+          model: Resource,
+          as: "resource",
+          attributes: ["resourceId", "name"],
+        },
+        {
+          model: AppUser,
+          as: "user",
+          attributes: ["userId", "email", "firstName", "lastName", "phone"],
+        },
+      ],
+    });
+
+    // Chart data (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const bookingsLast30Days = await Booking.findAll({
+      where: {
+        branchId: parseInt(branchId),
+        startAt: { [Op.gte]: thirtyDaysAgo },
+        status: { [Op.notIn]: ["cancelled", "rejected", "no_show"] },
+      },
+      attributes: ["startAt", "totalPrice"],
+    });
+
+    const chartMap = new Map<string, { date: string; bookings: number; revenue: number }>();
+    
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        chartMap.set(dateStr, { date: dateStr, bookings: 0, revenue: 0 });
+    }
+
+    bookingsLast30Days.forEach(b => {
+        const dateStr = new Date(b.startAt).toISOString().split('T')[0];
+        if (chartMap.has(dateStr)) {
+            const entry = chartMap.get(dateStr)!;
+            entry.bookings += 1;
+            entry.revenue += Number(b.totalPrice || 0);
+        }
+    });
+
+    const bookingsChart = Array.from(chartMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Calculate Occupancy (simplified for today)
+    const occupancyRate = totalResources > 0 ? Math.round((todayBookings / (totalResources * 10)) * 100) : 0;
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          totalResources,
+          activeResources,
+          todayBookings,
+          pendingBookings,
+          monthlyBookings,
+          occupancyRate: occupancyRate > 100 ? 100 : occupancyRate,
+        },
+        upcomingBookings,
+        bookingsChart,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

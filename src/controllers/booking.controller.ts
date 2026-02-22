@@ -23,6 +23,10 @@ import {
 import { hasAccessToBranch } from "../middlewares/authorize";
 import { calculateBookingPrice, isValidTimeRange } from "../helpers/utils";
 import {
+  sendBookingNotificationToClient,
+  sendBookingNotificationToAdmins,
+} from "../services/email.service";
+import {
   CreateBookingInput,
   RejectBookingInput,
 } from "../validators/schemas";
@@ -160,10 +164,33 @@ export const createBooking = async (
           {
             model: Branch,
             as: "branch",
-            attributes: ["branchId", "name"],
+            attributes: ["branchId", "name", "tenantId"],
+          },
+          {
+            model: AppUser,
+            as: "user",
+            attributes: ["email", "firstName", "lastName"],
+          },
+          {
+            model: Guest,
+            as: "guest",
+            attributes: ["email", "firstName", "lastName"],
           },
         ],
       });
+
+      // Send email notifications asynchronously
+      if (completeBooking) {
+        const emailType = initialStatus === BookingStatus.CONFIRMED 
+          ? 'created_auto_confirmed' 
+          : 'created_pending';
+
+        // Fire and forget wrapped in Promise.allSettled to prevent failing the request
+        Promise.allSettled([
+          sendBookingNotificationToClient(completeBooking as any, emailType),
+          sendBookingNotificationToAdmins(completeBooking as any, emailType)
+        ]).catch(err => console.error("Failed to trigger booking emails:", err));
+      }
 
       res.status(201).json({
         success: true,
@@ -428,9 +455,14 @@ export const getBranchBookings = async (
       whereClause.startAt = { [Op.gte]: new Date(from as string) };
     }
     if (to) {
-      whereClause.endAt = {
-        ...(whereClause.endAt || {}),
-        [Op.lte]: new Date(to as string),
+      // "to" es una fecha como "2026-02-21". Queremos incluir TODAS las reservas
+      // que empiecen en ese día, así que usamos startAt < (to + 1 día).
+      // El filtro anterior (endAt <= midnight UTC) excluía reservas del último día.
+      const toDate = new Date(to as string);
+      toDate.setUTCDate(toDate.getUTCDate() + 1);
+      whereClause.startAt = {
+        ...(whereClause.startAt as object || {}),
+        [Op.lt]: toDate,
       };
     }
     if (status) {
@@ -547,6 +579,21 @@ export const confirmBooking = async (
 
     await transaction.commit();
 
+    // Fetch relations for email
+    const completeBookingForEmail = await Booking.findByPk(booking.bookingId, {
+      include: [
+        { model: Resource, as: "resource", attributes: ["resourceId", "name"] },
+        { model: Branch, as: "branch", attributes: ["branchId", "name", "tenantId"] },
+        { model: AppUser, as: "user", attributes: ["email", "firstName", "lastName"] },
+        { model: Guest, as: "guest", attributes: ["email", "firstName", "lastName"] },
+      ]
+    });
+
+    if (completeBookingForEmail) {
+      sendBookingNotificationToClient(completeBookingForEmail as any, 'confirmed')
+        .catch(err => console.error("Failed to send confirmed booking email:", err));
+    }
+
     res.json({
       success: true,
       data: booking,
@@ -605,6 +652,21 @@ export const rejectBooking = async (
     );
 
     await transaction.commit();
+
+    // Fetch relations for email
+    const completeBookingForEmail = await Booking.findByPk(booking.bookingId, {
+      include: [
+        { model: Resource, as: "resource", attributes: ["resourceId", "name"] },
+        { model: Branch, as: "branch", attributes: ["branchId", "name", "tenantId"] },
+        { model: AppUser, as: "user", attributes: ["email", "firstName", "lastName"] },
+        { model: Guest, as: "guest", attributes: ["email", "firstName", "lastName"] },
+      ]
+    });
+
+    if (completeBookingForEmail) {
+      sendBookingNotificationToClient(completeBookingForEmail as any, 'rejected')
+        .catch(err => console.error("Failed to send rejected booking email:", err));
+    }
 
     res.json({
       success: true,

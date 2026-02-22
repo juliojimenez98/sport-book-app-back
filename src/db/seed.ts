@@ -55,8 +55,10 @@ const seedDatabase = async (): Promise<void> => {
       },
       { name: RoleName.BRANCH_ADMIN, description: "Administrates a branch" },
       { name: RoleName.STAFF, description: "Staff operator" },
+      { name: RoleName.CLIENTE, description: "Cliente que reserva canchas" },
     ]);
-    const [superAdminRole, tenantAdminRole, branchAdminRole, staffRole] = roles;
+    const [superAdminRole, tenantAdminRole, branchAdminRole, staffRole, clienteRole] = roles;
+
 
     // ============ SPORTS ============
     console.log("Creating sports...");
@@ -323,6 +325,12 @@ const seedDatabase = async (): Promise<void> => {
         scope: RoleScope.BRANCH,
         tenantId: tenant2.tenantId,
         branchId: branch2T2.branchId,
+      },
+      // Regular user - cliente (global)
+      {
+        userId: regularUser.userId,
+        roleId: clienteRole.roleId,
+        scope: RoleScope.GLOBAL,
       },
     ]);
 

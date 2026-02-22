@@ -12,7 +12,9 @@ import {
   getBlockedSlots,
   createBlockedSlot,
   deleteBlockedSlot,
+  getBranchDashboardStats,
 } from "../controllers/branch.controller";
+
 import { getBranchBookings } from "../controllers/booking.controller";
 import {
   getResourcesByBranch,
@@ -134,7 +136,25 @@ router.get(
   getBranchBookings,
 );
 
+// GET /branches/:branchId/dashboard-stats
+router.get(
+  "/:branchId/dashboard-stats",
+  authenticate,
+  validate(branchIdParamSchema, "params"),
+  authorize({
+    roles: [
+      RoleName.SUPER_ADMIN,
+      RoleName.TENANT_ADMIN,
+      RoleName.BRANCH_ADMIN,
+      RoleName.STAFF,
+    ],
+    branchScope: true,
+  }),
+  getBranchDashboardStats,
+);
+
 // ========== BRANCH HOURS ROUTES ==========
+
 
 // GET /branches/:branchId/hours (public - for booking UI)
 router.get(

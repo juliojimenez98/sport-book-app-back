@@ -33,8 +33,10 @@ export const RoleName = {
   SUPER_ADMIN: 'super_admin',
   TENANT_ADMIN: 'tenant_admin',
   BRANCH_ADMIN: 'branch_admin',
-  STAFF: 'staff'
+  STAFF: 'staff',
+  CLIENTE: 'cliente',
 } as const;
+
 
 export type RoleNameType = typeof RoleName[keyof typeof RoleName];
 

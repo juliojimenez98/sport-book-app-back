@@ -1,9 +1,25 @@
 import { Router } from 'express';
-import { register, login, refresh, logout, me } from '../controllers/auth.controller';
+import {
+  register,
+  login,
+  refresh,
+  logout,
+  me,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
+} from '../controllers/auth.controller';
 import { authenticate, optionalAuth } from '../middlewares/authenticate';
 import { authLimiter } from '../middlewares/rateLimiter';
 import { validate } from '../middlewares/validate';
-import { registerSchema, loginSchema, refreshTokenSchema } from '../validators/schemas';
+import {
+  registerSchema,
+  loginSchema,
+  refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../validators/schemas';
+
 
 const router = Router();
 
@@ -45,4 +61,27 @@ router.get(
   me
 );
 
+// GET /auth/verify-email?token=...
+router.get(
+  '/verify-email',
+  verifyEmail
+);
+
+// POST /auth/forgot-password
+router.post(
+  '/forgot-password',
+  authLimiter,
+  validate(forgotPasswordSchema),
+  forgotPassword
+);
+
+// POST /auth/reset-password
+router.post(
+  '/reset-password',
+  authLimiter,
+  validate(resetPasswordSchema),
+  resetPassword
+);
+
 export default router;
+

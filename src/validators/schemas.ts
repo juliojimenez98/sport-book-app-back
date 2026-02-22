@@ -242,6 +242,26 @@ export const resourceIdParamSchema = z.object({
   resourceId: z.string().regex(/^\d+$/).transform(Number),
 });
 
+// ============ USER SCHEMAS ============
+export const createUserSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100),
+  phone: z.string().max(20).optional(),
+  // Optional: assign branch-admin role to a specific branch
+  branchId: z.number().int().positive().optional(),
+});
+
+// ============ PASSWORD RESET SCHEMAS ============
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Formato de correo electrónico inválido"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "El token es requerido"),
+  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+});
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -253,3 +273,4 @@ export type CreateResourceInput = z.infer<typeof createResourceSchema>;
 export type UpdateResourceInput = z.infer<typeof updateResourceSchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 export type RejectBookingInput = z.infer<typeof rejectBookingSchema>;
+export type CreateUserInput = z.infer<typeof createUserSchema>;
