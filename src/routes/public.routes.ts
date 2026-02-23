@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { Op } from "sequelize";
 import {
   Tenant,
   Branch,
@@ -233,9 +234,19 @@ router.get(
     try {
       const { comunaId, regionId, sportId } = req.query;
 
-      const branchWhere: Record<string, unknown> = { isActive: true };
+      const branchWhere: any = { isActive: true };
       if (comunaId) branchWhere.comunaId = comunaId as string;
       if (regionId) branchWhere.regionId = regionId as string;
+
+      if (sportId) {
+        // Find branches that offer this sport
+        const branchSports = await BranchSport.findAll({
+          where: { sportId: parseInt(sportId as string) },
+          attributes: ["branchId"],
+        });
+        const branchIds = branchSports.map((bs) => bs.branchId);
+        branchWhere.branchId = { [Op.in]: branchIds };
+      }
 
       // Build includes
       const includes: any[] = [
@@ -256,7 +267,6 @@ router.get(
           model: Sport,
           as: "sports",
           through: { attributes: [] },
-          ...(sportId ? { where: { sportId: parseInt(sportId as string) } } : {}),
         },
         {
           model: BranchImage,

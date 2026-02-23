@@ -60,7 +60,7 @@ function getVerificationEmailHtml(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verifica tu cuenta · BookingPro</title>
+  <title>Verifica tu cuenta · Easy Sport Book</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
@@ -80,7 +80,7 @@ function getVerificationEmailHtml(
                   </td>
                 </tr>
               </table>
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">BookingPro</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">Easy Sport Book</h1>
               <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;font-weight:400;">Reserva canchas deportivas</p>
             </td>
           </tr>
@@ -90,7 +90,7 @@ function getVerificationEmailHtml(
             <td style="padding:48px 48px 32px;">
               <h2 style="margin:0 0 8px;color:#0f172a;font-size:22px;font-weight:700;">¡Hola, ${firstName}! 👋</h2>
               <p style="margin:0 0 28px;color:#475569;font-size:15px;line-height:1.7;">
-                Gracias por registrarte en <strong style="color:#0f172a;">BookingPro</strong>. Solo falta un paso:<br/>
+                Gracias por registrarte en <strong style="color:#0f172a;">Easy Sport Book</strong>. Solo falta un paso:<br/>
                 confirma tu dirección de email para activar tu cuenta.
               </p>
 
@@ -133,7 +133,7 @@ function getVerificationEmailHtml(
           <tr>
             <td style="padding:24px 48px;text-align:center;">
               <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
-                © ${year} BookingPro · Todos los derechos reservados<br/>
+                © ${year} Easy Sport Book · Todos los derechos reservados<br/>
                 Este email fue generado automáticamente — por favor no respondas.
               </p>
             </td>
@@ -154,14 +154,14 @@ function getVerificationEmailText(
 ): string {
   return `¡Hola, ${firstName}!
 
-Gracias por registrarte en BookingPro.
+Gracias por registrarte en Easy Sport Book.
 
 Haz clic en el siguiente link para verificar tu cuenta (expira en 24 horas):
 ${verificationUrl}
 
 Si no creaste esta cuenta, ignora este mensaje.
 
-© ${new Date().getFullYear()} BookingPro`;
+© ${new Date().getFullYear()} Easy Sport Book`;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export async function sendVerificationEmailOrThrow(user: {
 }): Promise<void> {
   await sendEmail({
     to: user.email,
-    subject: `BookingPro — Verifica tu cuenta, ${user.firstName}`,
+    subject: `Easy Sport Book — Verifica tu cuenta, ${user.firstName}`,
     html: getVerificationEmailHtml(user.firstName, user.verificationUrl),
     text: getVerificationEmailText(user.firstName, user.verificationUrl),
   });
@@ -219,10 +219,10 @@ function getPasswordResetEmailHtml(
     ? `¡Te han invitado, ${firstName}! 🎉`
     : `Hola ${firstName},`;
   const message = isInvitation
-    ? `<strong style="color:#0f172a;">${invitedBy}</strong> te ha invitado a BookingPro.<br/><br/>
+    ? `<strong style="color:#0f172a;">${invitedBy}</strong> te ha invitado a Easy Sport Book.<br/><br/>
        Tu contraseña temporal es: <strong style="color:#0f172a; background:#e0f2fe; padding:2px 6px; border-radius:4px; font-family:monospace;">${tempPassword}</strong><br/><br/>
        Inicia sesión con esta contraseña o cámbiala haciendo clic en el siguiente enlace:`
-    : `Alguien ha solicitado restablecer tu contraseña en BookingPro. Haz clic en el siguiente enlace para crear una nueva contraseña.`;
+    : `Alguien ha solicitado restablecer tu contraseña en Easy Sport Book. Haz clic en el siguiente enlace para crear una nueva contraseña.`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -246,7 +246,7 @@ function getPasswordResetEmailHtml(
                   </td>
                 </tr>
               </table>
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">BookingPro</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Easy Sport Book</h1>
               <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">Reserva canchas deportivas</p>
             </td>
           </tr>
@@ -287,7 +287,7 @@ function getPasswordResetEmailHtml(
           <tr>
             <td style="padding:24px 48px;text-align:center;">
               <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.7;">
-                © ${year} BookingPro &middot; Todos los derechos reservados<br/>
+                © ${year} Easy Sport Book &middot; Todos los derechos reservados<br/>
                 Email generado automáticamente &mdash; no respondas.
               </p>
             </td>
@@ -310,7 +310,7 @@ function getPasswordResetEmailText(
   if (isInvitation) {
     return `¡Hola, ${firstName}!
 
-${invitedBy} te ha invitado a BookingPro.
+${invitedBy} te ha invitado a Easy Sport Book.
 
 Tu contraseña temporal es: ${tempPassword}
 
@@ -319,19 +319,19 @@ ${resetUrl}
 
 Este enlace expira en 1 hora.
 
-© ${new Date().getFullYear()} BookingPro`;
+© ${new Date().getFullYear()} Easy Sport Book`;
   }
 
   return `Hola ${firstName},
 
-Has solicitado restablecer tu contraseña en BookingPro.
+Has solicitado restablecer tu contraseña en Easy Sport Book.
 
 Visita el siguiente enlace para configurar una nueva contraseña:
 ${resetUrl}
 
 Este enlace expira en 1 hora. Si no solicitaste esto, ignora este correo.
 
-© ${new Date().getFullYear()} BookingPro`;
+© ${new Date().getFullYear()} Easy Sport Book`;
 }
 
 /**
@@ -347,8 +347,8 @@ export async function sendPasswordResetEmailOrThrow(data: {
   tempPassword?: string;
 }): Promise<void> {
   const subject = data.isInvitation
-    ? `BookingPro — ${data.invitedBy} te invita a unirte`
-    : `BookingPro — Recuperar contraseña`;
+    ? `Easy Sport Book — ${data.invitedBy} te invita a unirte`
+    : `Easy Sport Book — Recuperar contraseña`;
 
   await sendEmail({
     to: data.email,
@@ -421,7 +421,7 @@ function getBookingEmailHtml(data: BookingEmailData): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${data.eventName} · BookingPro</title>
+  <title>${data.eventName} · Easy Sport Book</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
@@ -433,7 +433,7 @@ function getBookingEmailHtml(data: BookingEmailData): string {
           <!-- Header gradient -->
           <tr>
             <td style="background:linear-gradient(135deg,#14b8a6 0%,#06b6d4 100%);padding:32px 48px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">BookingPro</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">Easy Sport Book</h1>
               <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;font-weight:400;">Reserva canchas deportivas</p>
             </td>
           </tr>
@@ -504,7 +504,7 @@ function getBookingEmailHtml(data: BookingEmailData): string {
               </p>
               
               <p style="margin:0;color:#0f172a;font-size:15px;font-weight:600;">
-                El equipo de BookingPro
+                El equipo de Easy Sport Book
               </p>
             </td>
           </tr>
@@ -513,7 +513,7 @@ function getBookingEmailHtml(data: BookingEmailData): string {
           <tr>
             <td style="background:#f8fafc;padding:32px 48px;text-align:center;border-top:1px solid #e2e8f0;">
               <p style="margin:0;color:#94a3b8;font-size:13px;">
-                © ${year} BookingPro. Todos los derechos reservados.
+                © ${year} Easy Sport Book. Todos los derechos reservados.
               </p>
             </td>
           </tr>
@@ -556,8 +556,8 @@ Total a pagar: ${formatCurrency(data.totalPrice, data.currency)}
 -------------------------------------------------
 Si tienes alguna duda, contáctanos.
 
-El equipo de BookingPro
-© ${new Date().getFullYear()} BookingPro`;
+El equipo de Easy Sport Book
+© ${new Date().getFullYear()} Easy Sport Book`;
 
   return text;
 }
@@ -669,7 +669,7 @@ export async function sendBookingNotificationToClient(booking: CompleteBooking, 
   
   await sendEmail({
     to: client.email,
-    subject: `BookingPro — ${eventName}`,
+    subject: `Easy Sport Book — ${eventName}`,
     html: getBookingEmailHtml(emailData),
     text: getBookingEmailText(emailData),
   });
@@ -748,8 +748,8 @@ export async function sendBookingNotificationToAdmins(booking: CompleteBooking, 
       break;
     case 'created_pending':
       eventName = "Nueva solicitud pendiente de aprobación";
-      messageHTML = `Tienes una nueva reserva <strong style="color:#f59e0b;">pendiente de revisión</strong> en tu sucursal <strong style="color:#0f172a;">${booking.branch?.name}</strong>.<br/><br/>Entra al panel de control de BookingPro para aprobarla o rechazarla.`;
-      messageText = `Tienes una nueva reserva pendiente de revisión en tu sucursal ${booking.branch?.name}. Entra al panel de control de BookingPro para aprobarla o rechazarla.`;
+      messageHTML = `Tienes una nueva reserva <strong style="color:#f59e0b;">pendiente de revisión</strong> en tu sucursal <strong style="color:#0f172a;">${booking.branch?.name}</strong>.<br/><br/>Entra al panel de control de Easy Sport Book para aprobarla o rechazarla.`;
+      messageText = `Tienes una nueva reserva pendiente de revisión en tu sucursal ${booking.branch?.name}. Entra al panel de control de Easy Sport Book para aprobarla o rechazarla.`;
       break;
   }
 
@@ -760,7 +760,7 @@ export async function sendBookingNotificationToAdmins(booking: CompleteBooking, 
     adminEmails.map(email => 
       sendEmail({
         to: email,
-        subject: `BookingPro — ${eventName}`,
+        subject: `Easy Sport Book — ${eventName}`,
         html: getBookingEmailHtml(emailData),
         text: getBookingEmailText(emailData),
       })
