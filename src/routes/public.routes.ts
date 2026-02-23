@@ -5,10 +5,16 @@ import {
   Sport,
   Resource,
   BranchSport,
+  BranchImage,
+  ResourceImage,
 } from "../models/associations";
 import chileLocations from "../data/chile-locations.json";
+import { getAsset } from "../controllers/upload.controller";
 
 const router = Router();
+
+// GET /public/assets - Dynamic HTTP Presigned URL Redirection for S3
+router.get("/assets", getAsset);
 
 // GET /public/tenants - List all active tenants with their branches
 router.get(
@@ -91,6 +97,13 @@ router.get(
               "hasEquipmentRental",
               "amenitiesDescription",
             ],
+            include: [
+              {
+                model: BranchImage,
+                as: "images",
+                attributes: ["imageUrl", "isPrimary"],
+              },
+            ],
           },
         ],
       });
@@ -157,6 +170,11 @@ router.get(
         ],
         include: [
           {
+            model: BranchImage,
+            as: "images",
+            attributes: ["imageUrl", "isPrimary"],
+          },
+          {
             model: Resource,
             as: "resources",
             where: { isActive: true },
@@ -166,6 +184,11 @@ router.get(
                 model: Sport,
                 as: "sport",
                 attributes: ["sportId", "name"],
+              },
+              {
+                model: ResourceImage,
+                as: "images",
+                attributes: ["imageUrl", "isPrimary"],
               },
             ],
           },
@@ -234,6 +257,11 @@ router.get(
           as: "sports",
           through: { attributes: [] },
           ...(sportId ? { where: { sportId: parseInt(sportId as string) } } : {}),
+        },
+        {
+          model: BranchImage,
+          as: "images",
+          attributes: ["imageUrl", "isPrimary"],
         },
       ];
 
@@ -313,6 +341,11 @@ router.get(
               },
             ],
           },
+          {
+            model: ResourceImage,
+            as: "images",
+            attributes: ["imageUrl", "isPrimary"],
+          },
         ],
         order: [["name", "ASC"]],
       });
@@ -378,6 +411,11 @@ router.get(
                 ],
               },
             ],
+          },
+          {
+            model: ResourceImage,
+            as: "images",
+            attributes: ["imageUrl", "isPrimary"],
           },
         ],
       });

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Tenant, Branch } from "../models/associations";
+import { Tenant, Branch, TenantImage } from "../models/associations";
 import { AuthenticatedRequest } from "../interfaces";
 import { notFound, badRequest } from "../middlewares/errorHandler";
 import { getAccessibleTenantIds } from "../middlewares/authorize";
@@ -39,6 +39,12 @@ export const getAllTenants = async (
       limit,
       offset,
       order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: TenantImage,
+          as: "images",
+        },
+      ],
     });
 
     res.json({
@@ -72,6 +78,10 @@ export const getTenantById = async (
           as: "branches",
           where: { isActive: true },
           required: false,
+        },
+        {
+          model: TenantImage,
+          as: "images",
         },
       ],
     });
@@ -115,6 +125,15 @@ export const createTenant = async (
       logoUrl,
     });
 
+    if (req.body.images && Array.isArray(req.body.images)) {
+      const imagesPayload = req.body.images.map((url: string, index: number) => ({
+        tenantId: tenant.tenantId,
+        imageUrl: url,
+        isPrimary: index === 0,
+      }));
+      await TenantImage.bulkCreate(imagesPayload);
+    }
+
     res.status(201).json({
       success: true,
       data: tenant,
@@ -150,6 +169,16 @@ export const updateTenant = async (
     }
 
     await tenant.update(updateData);
+
+    if (req.body.images && Array.isArray(req.body.images)) {
+      await TenantImage.destroy({ where: { tenantId: tenant.tenantId } });
+      const imagesPayload = req.body.images.map((url: string, index: number) => ({
+        tenantId: tenant.tenantId,
+        imageUrl: url,
+        isPrimary: index === 0,
+      }));
+      await TenantImage.bulkCreate(imagesPayload);
+    }
 
     res.json({
       success: true,

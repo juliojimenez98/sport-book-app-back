@@ -5,6 +5,7 @@ import {
   Sport,
   Booking,
   BlockedSlot,
+  ResourceImage,
 } from "../models/associations";
 import { AuthenticatedRequest, BookingStatus } from "../interfaces";
 import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
@@ -48,6 +49,10 @@ export const getResourcesByBranch = async (
           as: "sport",
           attributes: ["sportId", "name", "iconUrl"],
         },
+        {
+          model: ResourceImage,
+          as: "images",
+        },
       ],
     });
 
@@ -80,6 +85,10 @@ export const getResourceById = async (
           model: Sport,
           as: "sport",
           attributes: ["sportId", "name", "iconUrl"],
+        },
+        {
+          model: ResourceImage,
+          as: "images",
         },
       ],
     });
@@ -143,6 +152,15 @@ export const createResource = async (
       currency: currency || "MXN",
     });
 
+    if (req.body.images && Array.isArray(req.body.images)) {
+      const imagesPayload = req.body.images.map((url: string, index: number) => ({
+        resourceId: resource.resourceId,
+        imageUrl: url,
+        isPrimary: index === 0,
+      }));
+      await ResourceImage.bulkCreate(imagesPayload);
+    }
+
     res.status(201).json({
       success: true,
       data: resource,
@@ -176,6 +194,16 @@ export const updateResource = async (
     }
 
     await resource.update(updateData);
+
+    if (req.body.images && Array.isArray(req.body.images)) {
+      await ResourceImage.destroy({ where: { resourceId: resource.resourceId } });
+      const imagesPayload = req.body.images.map((url: string, index: number) => ({
+        resourceId: resource.resourceId,
+        imageUrl: url,
+        isPrimary: index === 0,
+      }));
+      await ResourceImage.bulkCreate(imagesPayload);
+    }
 
     res.json({
       success: true,

@@ -13,12 +13,17 @@ import UserRole from "./UserRole";
 import BranchHours from "./BranchHours";
 import RefreshToken from "./RefreshToken";
 import BlockedSlot from "./BlockedSlot";
+import BranchImage from "./BranchImage";
+import TenantImage from "./TenantImage";
+import ResourceImage from "./ResourceImage";
 
 // ============ TENANT ASSOCIATIONS ============
 Tenant.hasMany(Branch, { foreignKey: "tenantId", as: "branches" });
 Tenant.hasMany(Guest, { foreignKey: "tenantId", as: "guests" });
 Tenant.hasMany(Booking, { foreignKey: "tenantId", as: "bookings" });
 Tenant.hasMany(UserRole, { foreignKey: "tenantId", as: "userRoles" });
+Tenant.hasMany(TenantImage, { foreignKey: "tenantId", as: "images" });
+TenantImage.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
 
 // ============ BRANCH ASSOCIATIONS ============
 Branch.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
@@ -27,6 +32,8 @@ Branch.hasMany(Resource, { foreignKey: "branchId", as: "resources" });
 Branch.hasMany(Booking, { foreignKey: "branchId", as: "bookings" });
 Branch.hasMany(BranchHours, { foreignKey: "branchId", as: "branchHours" });
 Branch.hasMany(UserRole, { foreignKey: "branchId", as: "userRoles" });
+Branch.hasMany(BranchImage, { foreignKey: "branchId", as: "images" });
+BranchImage.belongsTo(Branch, { foreignKey: "branchId", as: "branch" });
 
 // Many-to-many: Branch <-> Sport through BranchSport
 Branch.belongsToMany(Sport, {
@@ -52,6 +59,8 @@ BranchSport.belongsTo(Sport, { foreignKey: "sportId", as: "sport" });
 Resource.belongsTo(Branch, { foreignKey: "branchId", as: "branch" });
 Resource.belongsTo(Sport, { foreignKey: "sportId", as: "sport" });
 Resource.hasMany(Booking, { foreignKey: "resourceId", as: "bookings" });
+Resource.hasMany(ResourceImage, { foreignKey: "resourceId", as: "images" });
+ResourceImage.belongsTo(Resource, { foreignKey: "resourceId", as: "resource" });
 
 // ============ APP USER ASSOCIATIONS ============
 AppUser.hasMany(Booking, { foreignKey: "userId", as: "bookings" });
@@ -128,4 +137,7 @@ export {
   BranchHours,
   RefreshToken,
   BlockedSlot,
+  BranchImage,
+  TenantImage,
+  ResourceImage,
 };

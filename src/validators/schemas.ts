@@ -30,7 +30,7 @@ export const createTenantSchema = z.object({
     .optional(),
   email: z.string().email().optional(),
   phone: z.string().max(20).optional(),
-  logoUrl: z.string().url().optional(),
+  logoUrl: z.string().optional().or(z.literal("")),
   primaryColor: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color")
@@ -43,6 +43,7 @@ export const createTenantSchema = z.object({
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color")
     .optional(),
+  images: z.array(z.string()).optional(),
 });
 
 export const updateTenantSchema = z.object({
@@ -55,7 +56,7 @@ export const updateTenantSchema = z.object({
     .optional(),
   email: z.string().email().optional(),
   phone: z.string().max(20).optional(),
-  logoUrl: z.string().url().optional(),
+  logoUrl: z.string().optional().or(z.literal("")),
   primaryColor: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color")
@@ -72,6 +73,7 @@ export const updateTenantSchema = z.object({
     .optional()
     .or(z.literal("")),
   isActive: z.boolean().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 // ============ BRANCH SCHEMAS ============
@@ -101,6 +103,8 @@ export const createBranchSchema = z.object({
   amenitiesDescription: z.string().max(1000).optional(),
   // Booking settings
   requiresApproval: z.boolean().optional(),
+  // Images
+  images: z.array(z.string()).optional(),
 });
 
 export const updateBranchSchema = z.object({
@@ -124,6 +128,8 @@ export const updateBranchSchema = z.object({
   amenitiesDescription: z.string().max(1000).optional(),
   // Booking settings
   requiresApproval: z.boolean().optional(),
+  // Images
+  images: z.array(z.string()).optional(),
 });
 
 // ============ SPORT SCHEMAS ============
@@ -147,6 +153,7 @@ export const createResourceSchema = z.object({
   description: z.string().max(500).optional(),
   pricePerHour: z.number().positive(),
   currency: z.string().length(3).optional(),
+  images: z.array(z.string()).optional(),
 });
 
 export const updateResourceSchema = z.object({
@@ -155,6 +162,7 @@ export const updateResourceSchema = z.object({
   pricePerHour: z.number().positive().optional(),
   currency: z.string().length(3).optional(),
   isActive: z.boolean().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 // ============ BOOKING SCHEMAS ============

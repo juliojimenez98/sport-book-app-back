@@ -62,11 +62,14 @@ router.get(
   getTenantById,
 );
 
-// PUT /tenants/:id (super_admin only)
+// PUT /tenants/:id (super_admin, tenant_admin)
 router.put(
   "/:id",
-  authorize({ roles: [RoleName.SUPER_ADMIN] }),
   validate(idParamSchema, "params"),
+  authorize({
+    roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN],
+    tenantScope: true,
+  }),
   validate(updateTenantSchema),
   updateTenant,
 );

@@ -199,7 +199,7 @@ export const login = async (
         accessToken,
         refreshToken,
         user: {
-          id: user.userId,
+          userId: user.userId,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -475,7 +475,7 @@ export const me = async (
     res.json({
       success: true,
       data: {
-        id: user.userId,
+        userId: user.userId,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,

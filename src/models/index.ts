@@ -13,3 +13,6 @@ export { default as Role } from './Role';
 export { default as UserRole } from './UserRole';
 export { default as BranchHours } from './BranchHours';
 export { default as RefreshToken } from './RefreshToken';
+export { default as BranchImage } from './BranchImage';
+export { default as TenantImage } from './TenantImage';
+export { default as ResourceImage } from './ResourceImage';

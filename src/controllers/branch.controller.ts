@@ -10,6 +10,7 @@ import {
   Booking,
   UserRole,
   AppUser,
+  BranchImage,
 } from "../models/associations";
 import { AuthenticatedRequest } from "../interfaces";
 import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
@@ -51,6 +52,10 @@ export const getBranchesByTenant = async (
           model: Sport,
           as: "sports",
           through: { attributes: [] },
+        },
+        {
+          model: BranchImage,
+          as: "images",
         },
       ],
     });
@@ -109,6 +114,10 @@ export const getAllBranches = async (
           as: "sports",
           through: { attributes: [] },
         },
+        {
+          model: BranchImage,
+          as: "images",
+        },
       ],
     });
 
@@ -157,6 +166,10 @@ export const getBranchById = async (
           as: "resources",
           where: { isActive: true },
           required: false,
+        },
+        {
+          model: BranchImage,
+          as: "images",
         },
       ],
     });
@@ -273,6 +286,16 @@ export const createBranch = async (
     ];
     await BranchHours.bulkCreate(defaultHours);
 
+    // Guardar Galería de Imágenes si se proveyó
+    if (req.body.images && Array.isArray(req.body.images)) {
+      const imagesPayload = req.body.images.map((url: string, index: number) => ({
+        branchId: branch.branchId,
+        imageUrl: url,
+        isPrimary: index === 0, // Definir la primera imagen como portada
+      }));
+      await BranchImage.bulkCreate(imagesPayload);
+    }
+
     res.status(201).json({
       success: true,
       data: branch,
@@ -298,6 +321,20 @@ export const updateBranch = async (
     }
 
     await branch.update(updateData);
+
+    // Actualizar Galería de Imágenes si se proveyó el array
+    if (req.body.images && Array.isArray(req.body.images)) {
+      // Eliminar las imágenes anteriores
+      await BranchImage.destroy({ where: { branchId: branch.branchId } });
+      
+      // Insertar las nuevas
+      const imagesPayload = req.body.images.map((url: string, index: number) => ({
+        branchId: branch.branchId,
+        imageUrl: url,
+        isPrimary: index === 0,
+      }));
+      await BranchImage.bulkCreate(imagesPayload);
+    }
 
     res.json({
       success: true,

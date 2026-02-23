@@ -18,6 +18,8 @@ import resourceRoutes from "../routes/resource.routes";
 import bookingRoutes from "../routes/booking.routes";
 import userRoutes from "../routes/user.routes";
 import publicRoutes from "../routes/public.routes";
+import uploadRoutes from "../routes/upload.routes";
+import { getAsset } from "../controllers/upload.controller";
 
 // Import associations to set up relationships
 import "../models/associations";
@@ -39,7 +41,10 @@ class Server {
 
   private middlewares(): void {
     // Security middlewares
-    this.app.use(helmet());
+    this.app.use(helmet({
+      crossOriginResourcePolicy: false,
+      contentSecurityPolicy: false,
+    }));
     this.app.use(
       cors({
         origin: process.env.CORS_ORIGIN || "http://localhost:5173",
@@ -66,8 +71,8 @@ class Server {
       res.json({ status: "ok", timestamp: new Date().toISOString() });
     });
 
-    // API routes
     this.app.use("/api/public", publicRoutes); // Public endpoints (no auth required)
+    this.app.use("/api/public/assets", getAsset); // Temporary direct mount for assets
     this.app.use("/api/auth", authRoutes);
     this.app.use("/api/tenants", tenantRoutes);
     this.app.use("/api/branches", branchRoutes);
@@ -75,6 +80,7 @@ class Server {
     this.app.use("/api/resources", resourceRoutes);
     this.app.use("/api/bookings", bookingRoutes);
     this.app.use("/api/users", userRoutes);
+    this.app.use("/api/upload", uploadRoutes);
 
     // 404 handler
     this.app.use((_req: Request, res: Response) => {
