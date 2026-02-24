@@ -100,6 +100,21 @@ const ensureConstraints = async (): Promise<void> => {
       sql: 'ALTER TABLE booking ADD CONSTRAINT booking_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE ON UPDATE CASCADE',
     },
     {
+      table: 'booking',
+      constraint: 'booking_user_id_fkey',
+      sql: 'ALTER TABLE booking ADD CONSTRAINT booking_user_id_fkey FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE SET NULL ON UPDATE CASCADE',
+    },
+    {
+      table: 'booking',
+      constraint: 'booking_guest_id_fkey',
+      sql: 'ALTER TABLE booking ADD CONSTRAINT booking_guest_id_fkey FOREIGN KEY (guest_id) REFERENCES guest(id) ON DELETE SET NULL ON UPDATE CASCADE',
+    },
+    {
+      table: 'booking',
+      constraint: 'booking_discount_id_fkey',
+      sql: 'ALTER TABLE booking ADD CONSTRAINT booking_discount_id_fkey FOREIGN KEY (discount_id) REFERENCES discount(id) ON DELETE SET NULL ON UPDATE CASCADE',
+    },
+    {
       table: 'branch_image',
       constraint: 'branch_image_branch_id_fkey',
       sql: 'ALTER TABLE branch_image ADD CONSTRAINT branch_image_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES branch(id) ON DELETE CASCADE ON UPDATE CASCADE',
@@ -125,14 +140,19 @@ const ensureConstraints = async (): Promise<void> => {
       sql: 'ALTER TABLE discount ADD CONSTRAINT discount_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES branch(id) ON DELETE CASCADE ON UPDATE CASCADE',
     },
     {
-      table: 'discount',
-      constraint: 'discount_resource_id_fkey',
-      sql: 'ALTER TABLE discount ADD CONSTRAINT discount_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES resource(id) ON DELETE CASCADE ON UPDATE CASCADE',
-    },
-    {
       table: 'survey_response',
       constraint: 'survey_response_booking_id_fkey',
       sql: 'ALTER TABLE survey_response ADD CONSTRAINT survey_response_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES booking(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
+    {
+      table: 'discount_resource',
+      constraint: 'discount_resource_discount_id_fkey',
+      sql: 'ALTER TABLE discount_resource ADD CONSTRAINT discount_resource_discount_id_fkey FOREIGN KEY (discount_id) REFERENCES discount(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
+    {
+      table: 'discount_resource',
+      constraint: 'discount_resource_resource_id_fkey',
+      sql: 'ALTER TABLE discount_resource ADD CONSTRAINT discount_resource_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES resource(id) ON DELETE CASCADE ON UPDATE CASCADE',
     },
   ];
 
@@ -162,12 +182,8 @@ const ensureConstraints = async (): Promise<void> => {
 
 export const syncDatabase = async (force = false): Promise<void> => {
   try {
-    if (!force && process.env.NODE_ENV === 'development') {
-      await ensureConstraints();
-    }
-    // Never use alter: true in dev as it causes Postgres constraint drop errors
-    // with freezeTableName and underscored options due to quoting bugs in Sequelize.
-    await sequelize.sync({ force, alter: false });
+    await ensureConstraints();
+    await sequelize.sync({ force, alter: !force });
     console.log('✅ Database synchronized successfully.');
   } catch (error) {
     console.error('❌ Error synchronizing database:', error);
