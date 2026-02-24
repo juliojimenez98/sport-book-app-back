@@ -31,7 +31,13 @@ interface BookingAttributes {
 
 interface BookingCreationAttributes extends Optional<
   BookingAttributes,
-  "bookingId" | "status" | "source" | "currency" | "discountId" | "surveySent" | "originalPrice"
+  | "bookingId"
+  | "status"
+  | "source"
+  | "currency"
+  | "discountId"
+  | "surveySent"
+  | "originalPrice"
 > {}
 
 class Booking
