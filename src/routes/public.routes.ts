@@ -397,6 +397,7 @@ router.get(
             as: "branch",
             attributes: [
               "branchId",
+              "tenantId",
               "name",
               "slug",
               "address",
