@@ -34,21 +34,28 @@ export const authorize = (options: AuthorizeOptions = {}) => {
 
       // Check tenant scope
       if (tenantScope) {
-        const tenantId = parseInt(req.params.tenantId || req.body?.tenantId, 10);
+        const tenantId = parseInt(req.params.tenantId || req.body?.tenantId || (req.query?.tenantId as string), 10);
         if (tenantId) {
           const hasTenantAccess = userRoles.some(ur => 
             (ur.scope === RoleScope.TENANT || ur.scope === RoleScope.BRANCH) && 
             ur.tenantId === tenantId
           );
-          if (!hasTenantAccess) {
+          if (!hasTenantAccess && !isSuperAdmin) {
             throw forbidden('Access denied to this tenant');
           }
+          (req as any).tenantId = tenantId;
+        } else if (!isSuperAdmin) {
+           // Inference: if not provided but user is a tenant admin, default to their tenant
+           const tenantAdminRole = userRoles.find(ur => ur.roleName === RoleName.TENANT_ADMIN);
+           if (tenantAdminRole && tenantAdminRole.tenantId) {
+             (req as any).tenantId = tenantAdminRole.tenantId;
+           }
         }
       }
 
       // Check branch scope
       if (branchScope) {
-        const branchId = parseInt(req.params.branchId || req.body?.branchId, 10);
+        const branchId = parseInt(req.params.branchId || req.body?.branchId || (req.query?.branchId as string), 10);
         if (branchId) {
           const hasBranchAccess = userRoles.some(ur => {
             // Tenant admins have access to all branches in their tenant
@@ -58,9 +65,28 @@ export const authorize = (options: AuthorizeOptions = {}) => {
             // Branch admins and staff only to their branch
             return ur.scope === RoleScope.BRANCH && ur.branchId === branchId;
           });
-          if (!hasBranchAccess) {
+          if (!hasBranchAccess && !isSuperAdmin) {
             throw forbidden('Access denied to this branch');
           }
+          (req as any).branchId = branchId;
+
+          // If a branchId is determined and no tenantId was injected yet, 
+          // we should inject it from the user's branch role to satisfy DB constraints.
+          if (!(req as any).tenantId) {
+             const matchingBranchRole = userRoles.find(ur => ur.branchId === branchId);
+             if (matchingBranchRole && matchingBranchRole.tenantId) {
+                (req as any).tenantId = matchingBranchRole.tenantId;
+             }
+          }
+        } else if (!isSuperAdmin) {
+           // Inference: if not provided but user is a branch admin, default to their branch
+           const branchAdminRole = userRoles.find(ur => ur.roleName === RoleName.BRANCH_ADMIN);
+           if (branchAdminRole && branchAdminRole.branchId) {
+             (req as any).branchId = branchAdminRole.branchId;
+             if (!(req as any).tenantId && branchAdminRole.tenantId) {
+                 (req as any).tenantId = branchAdminRole.tenantId;
+             }
+           }
         }
       }
 

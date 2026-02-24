@@ -8,6 +8,7 @@ import sequelize, {
   initializeExtensions,
 } from "../db/connection";
 import { errorHandler } from "../middlewares/errorHandler";
+import { initJobs } from "../jobs/surveyCron";
 
 // Import routes
 import authRoutes from "../routes/auth.routes";
@@ -19,6 +20,7 @@ import bookingRoutes from "../routes/booking.routes";
 import userRoutes from "../routes/user.routes";
 import publicRoutes from "../routes/public.routes";
 import uploadRoutes from "../routes/upload.routes";
+import discountRoutes from "../routes/discount.routes";
 import { getAsset } from "../controllers/upload.controller";
 
 // Import associations to set up relationships
@@ -81,6 +83,7 @@ class Server {
     this.app.use("/api/bookings", bookingRoutes);
     this.app.use("/api/users", userRoutes);
     this.app.use("/api/upload", uploadRoutes);
+    this.app.use("/api/discounts", discountRoutes);
 
     // 404 handler
     this.app.use((_req: Request, res: Response) => {
@@ -143,6 +146,8 @@ class Server {
       this.app.listen(this.port, () => {
         console.log(`🚀 Server is running on port ${this.port}`);
         console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
+        // Initialize cron jobs
+        initJobs();
       });
     } catch (error) {
       console.error("Failed to start server:", error);

@@ -8,11 +8,14 @@ import {
   AppUser,
   BookingCancellation,
   Sport,
+  Discount,
 } from "../models/associations";
 import {
   AuthenticatedRequest,
   BookingStatus,
   BookingSource,
+  DiscountType,
+  DiscountConditionType,
 } from "../interfaces";
 import {
   notFound,
@@ -42,8 +45,8 @@ export const createBooking = async (
   const transaction = await sequelize.transaction();
 
   try {
-    const { resourceId, startAt, endAt, source, notes, guest } =
-      req.body as CreateBookingInput;
+    const { resourceId, startAt, endAt, source, notes, guest, discountCode } =
+      req.body as CreateBookingInput & { discountCode?: string };
 
     // Validate time range
     const startDate = new Date(startAt);
@@ -119,12 +122,96 @@ export const createBooking = async (
       throw badRequest("Either login or provide guest information");
     }
 
-    // Calculate price
-    const totalPrice = calculateBookingPrice(
+    // Calculate base price
+    const originalPrice = calculateBookingPrice(
       parseFloat(resource.pricePerHour.toString()),
       startDate,
       endDate,
     );
+
+    let totalPrice = originalPrice;
+    let appliedDiscountId: number | undefined;
+
+    // Check for applicable discount
+    let discount = null;
+
+    if (discountCode) {
+      discount = await Discount.findOne({
+        where: {
+          code: discountCode,
+          tenantId: branch.tenantId,
+          isActive: true,
+          conditionType: DiscountConditionType.PROMO_CODE,
+        },
+        include: [{ model: Resource, as: "resources", attributes: ["resourceId"] }],
+        transaction,
+      });
+
+      // Validating branch/resource constraints for promo code
+      if (discount) {
+        const d = discount as any;
+        if (d.branchId && d.branchId !== branch.branchId) discount = null;
+        else if (d.resources && d.resources.length > 0 && !d.resources.some((r: any) => r.resourceId === resource.resourceId)) discount = null;
+      }
+    } 
+
+    // If no promo code applied, check for time-based discounts automatically
+    if (!discount) {
+       // Find active time_based discounts for this tenant
+       const timeDiscounts = await Discount.findAll({
+         where: {
+           tenantId: branch.tenantId,
+           isActive: true,
+           conditionType: DiscountConditionType.TIME_BASED,
+         },
+         include: [{ model: Resource, as: "resources", attributes: ["resourceId"] }],
+         transaction,
+       });
+       const datePart = startAt.split('T')[0]; // YYYY-MM-DD
+       const timePart = startAt.split('T')[1]; // HH:mm:00
+       
+       const safeDate = new Date(`${datePart}T12:00:00Z`);
+       const dayOfWeek = safeDate.getUTCDay();
+       const startHourStr = timePart;
+       
+       for (const d of timeDiscounts) {
+         let applies = true;
+         // branch/resource check
+         if (d.branchId && d.branchId !== branch.branchId) applies = false;
+         const resources = (d as any).resources || [];
+         if (applies && resources.length > 0 && !resources.some((r: any) => r.resourceId === resource.resourceId)) applies = false;
+         
+         // Day of week check
+         if (applies && d.daysOfWeek && d.daysOfWeek.length > 0) {
+           if (!d.daysOfWeek.includes(dayOfWeek)) applies = false;
+         }
+
+         // Time window check
+         if (applies && d.startTime && d.endTime) {
+           if (startHourStr < d.startTime || startHourStr >= d.endTime) applies = false;
+         }
+
+         if (applies) {
+           discount = d;
+           break; // apply first matched time discount
+         }
+       }
+    }
+
+    // Apply the discount amount
+    if (discount) {
+      const d = discount as any;
+      appliedDiscountId = d.discountId;
+      const value = Number(d.value);
+      if (d.type === DiscountType.PERCENTAGE) {
+        totalPrice = originalPrice - (originalPrice * (value / 100));
+      } else if (d.type === DiscountType.FIXED_AMOUNT) {
+        totalPrice = originalPrice - value;
+      }
+      
+      // Prevent negative total price
+      if (totalPrice < 0) totalPrice = 0;
+    }
 
     // Determine initial status based on branch setting
     const initialStatus = branch.requiresApproval
@@ -144,8 +231,11 @@ export const createBooking = async (
           endAt: endDate,
           status: initialStatus,
           source: source || BookingSource.WEB,
+          originalPrice,
           totalPrice,
+          discountId: appliedDiscountId,
           currency: resource.currency,
+          surveySent: false,
           notes,
         },
         { transaction },

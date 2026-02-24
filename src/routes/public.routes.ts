@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import { DiscountType, DiscountConditionType } from "../interfaces";
 import { Op } from "sequelize";
 import {
   Tenant,
@@ -8,7 +9,10 @@ import {
   BranchSport,
   BranchImage,
   ResourceImage,
+  Discount,
+  Booking,
 } from "../models/associations";
+import SurveyResponse from "../models/SurveyResponse"; // Added SurveyResponse import
 import chileLocations from "../data/chile-locations.json";
 import { getAsset } from "../controllers/upload.controller";
 
@@ -445,6 +449,235 @@ router.get(
       next(error);
     }
   },
+);
+
+// POST /public/discounts/calculate - Calculate total price with discounts preview
+router.post(
+  "/discounts/calculate",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { code, tenantId, branchId, resourceId, startAt, endAt } = req.body;
+
+      if (!tenantId || !resourceId || !startAt || !endAt) {
+        return res.status(400).json({
+          success: false,
+          message: "Faltan parámetros para calcular el precio",
+        });
+      }
+
+      const resource = await Resource.findByPk(resourceId);
+      if (!resource) {
+        return res.status(404).json({ success: false, message: "Cancha no encontrada" });
+      }
+
+      const startDate = new Date(startAt);
+      const endDate = new Date(endAt);
+
+      // calculate base price
+      const diffMs = endDate.getTime() - startDate.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      const originalPrice = Number(resource.pricePerHour) * diffHours;
+      let totalPrice = originalPrice;
+      let appliedDiscount = null;
+
+      // Check Promo Code
+      let discount = null;
+      if (code) {
+        discount = await Discount.findOne({
+          where: {
+            code,
+            tenantId,
+            isActive: true,
+            conditionType: DiscountConditionType.PROMO_CODE,
+          },
+          include: [{ model: Resource, as: "resources", attributes: ["resourceId"] }]
+        });
+        if (discount) {
+          const d = discount as any;
+          if (d.branchId && d.branchId !== branchId) discount = null;
+          else if (d.resources && d.resources.length > 0 && !d.resources.some((r: any) => r.resourceId === resourceId)) discount = null;
+        }
+      }
+
+      // Check Time Based
+      if (!discount) {
+        const timeDiscounts = await Discount.findAll({
+          where: {
+            tenantId,
+            isActive: true,
+            conditionType: DiscountConditionType.TIME_BASED,
+          },
+          include: [{ model: Resource, as: "resources", attributes: ["resourceId"] }]
+        });
+
+        // The frontend sends `YYYY-MM-DDTHH:mm:00`
+        // Parse date objectively to avoid timezone shift on the server
+        const datePart = startAt.split('T')[0]; // YYYY-MM-DD
+        const timePart = startAt.split('T')[1]; // HH:mm:00
+        
+        // Construct a Date object at noon UTC to safely get the correct weekday regardless of server timezone
+        const safeDate = new Date(`${datePart}T12:00:00Z`);
+        const dayOfWeek = safeDate.getUTCDay();
+        const startHourStr = timePart;
+
+        for (const d of timeDiscounts) {
+          let applies = true;
+          if (d.branchId && d.branchId !== branchId) applies = false;
+          const resources = (d as any).resources || [];
+          if (applies && resources.length > 0 && !resources.some((r: any) => r.resourceId === resourceId)) applies = false;
+          if (applies && d.daysOfWeek && d.daysOfWeek.length > 0) {
+            if (!d.daysOfWeek.includes(dayOfWeek)) applies = false;
+          }
+          if (applies && d.startTime && d.endTime) {
+            if (startHourStr < d.startTime || startHourStr >= d.endTime) applies = false;
+          }
+          if (applies) {
+            discount = d;
+            break;
+          }
+        }
+      }
+
+      // Apply logic
+      if (discount) {
+        appliedDiscount = discount;
+        const value = Number(discount.value);
+        if (discount.type === DiscountType.PERCENTAGE) {
+          totalPrice = originalPrice - (originalPrice * (value / 100));
+        } else if (discount.type === DiscountType.FIXED_AMOUNT) {
+          totalPrice = originalPrice - value;
+        }
+        if (totalPrice < 0) totalPrice = 0;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          originalPrice,
+          totalPrice,
+          discount: appliedDiscount
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// POST /public/discounts/validate - Validate a promo code
+router.post(
+  "/discounts/validate",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { code, tenantId, branchId, resourceId } = req.body;
+
+      if (!code || !tenantId) {
+        return res.status(400).json({
+          success: false,
+          message: "El código y tenantId son requeridos",
+        });
+      }
+
+      const discount = await Discount.findOne({
+        where: {
+          code,
+          tenantId,
+          isActive: true,
+          conditionType: DiscountConditionType.PROMO_CODE,
+        },
+        include: [{ model: Resource, as: "resources", attributes: ["resourceId"] }]
+      });
+
+      if (!discount) {
+        return res.status(404).json({
+          success: false,
+          message: "Código de descuento inválido o expirado",
+        });
+      }
+
+      // Validate constraints
+      if (discount.branchId && branchId && discount.branchId !== branchId) {
+        return res.status(400).json({
+          success: false,
+          message: "Este código no es válido para esta sucursal",
+        });
+      }
+
+      const resources = (discount as any).resources || [];
+      if (resources.length > 0 && !resources.some((r: any) => r.resourceId === resourceId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Este código no es válido para esta cancha",
+        });
+      }
+
+      res.json({
+        success: true,
+        data: discount,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+// POST /public/surveys/submit - Submit a post-booking survey
+router.post(
+  "/surveys/submit",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { 
+        bookingId, 
+        resourceCondition,
+        amenitiesRating,
+        attentionRating,
+        punctualityRating,
+        comments 
+      } = req.body;
+
+      if (!bookingId) {
+        return res.status(400).json({
+          success: false,
+          message: "Se requiere el ID de la reserva (bookingId).",
+        });
+      }
+
+      // Check if booking exists
+      const booking = await Booking.findByPk(bookingId);
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: "Reserva no encontrada.",
+        });
+      }
+
+      // Check if already surveyed
+      const existing = await SurveyResponse.findOne({ where: { bookingId } });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: "Esta reserva ya cuenta con una encuesta registrada.",
+        });
+      }
+
+      const survey = await SurveyResponse.create({
+        bookingId,
+        resourceCondition: resourceCondition || 5,
+        amenitiesRating: amenitiesRating || 5,
+        attentionRating: attentionRating || 5,
+        punctualityRating: punctualityRating || 5,
+        comments,
+      });
+
+      res.status(201).json({
+        success: true,
+        data: survey,
+        message: "Encuesta enviada con éxito.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;

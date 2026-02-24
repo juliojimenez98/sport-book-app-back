@@ -16,3 +16,5 @@ export { default as RefreshToken } from './RefreshToken';
 export { default as BranchImage } from './BranchImage';
 export { default as TenantImage } from './TenantImage';
 export { default as ResourceImage } from './ResourceImage';
+export { default as Discount } from './Discount';
+export { default as SurveyResponse } from './SurveyResponse';

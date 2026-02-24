@@ -179,6 +179,7 @@ export const createBookingSchema = z
         BookingSource.WALK_IN,
       ])
       .optional(),
+    discountCode: z.string().optional(),
     notes: z.string().optional(),
     // For guest bookings
     guest: z

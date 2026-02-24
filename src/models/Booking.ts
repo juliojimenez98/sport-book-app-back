@@ -19,16 +19,19 @@ interface BookingAttributes {
   status: BookingStatusType;
   source: BookingSourceType;
   totalPrice: number;
+  originalPrice: number;
   currency: string;
   notes?: string;
   rejectionReason?: string;
+  discountId?: number;
+  surveySent: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 interface BookingCreationAttributes extends Optional<
   BookingAttributes,
-  "bookingId" | "status" | "source" | "currency"
+  "bookingId" | "status" | "source" | "currency" | "discountId" | "surveySent" | "originalPrice"
 > {}
 
 class Booking
@@ -46,9 +49,12 @@ class Booking
   public status!: BookingStatusType;
   public source!: BookingSourceType;
   public totalPrice!: number;
+  public originalPrice!: number;
   public currency!: string;
   public notes?: string;
   public rejectionReason?: string;
+  public discountId?: number;
+  public surveySent!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -163,6 +169,11 @@ Booking.init(
       allowNull: false,
       field: "total_price",
     },
+    originalPrice: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      field: "original_price",
+    },
     currency: {
       type: DataTypes.STRING(3),
       allowNull: false,
@@ -176,6 +187,23 @@ Booking.init(
       type: DataTypes.TEXT,
       allowNull: true,
       field: "rejection_reason",
+    },
+    discountId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: "discount_id",
+      references: {
+        model: "discount",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
+    surveySent: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: "survey_sent",
     },
   },
   {

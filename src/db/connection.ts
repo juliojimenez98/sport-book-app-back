@@ -114,6 +114,26 @@ const ensureConstraints = async (): Promise<void> => {
       constraint: 'resource_image_resource_id_fkey',
       sql: 'ALTER TABLE resource_image ADD CONSTRAINT resource_image_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES resource(id) ON DELETE CASCADE ON UPDATE CASCADE',
     },
+    {
+      table: 'discount',
+      constraint: 'discount_tenant_id_fkey',
+      sql: 'ALTER TABLE discount ADD CONSTRAINT discount_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
+    {
+      table: 'discount',
+      constraint: 'discount_branch_id_fkey',
+      sql: 'ALTER TABLE discount ADD CONSTRAINT discount_branch_id_fkey FOREIGN KEY (branch_id) REFERENCES branch(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
+    {
+      table: 'discount',
+      constraint: 'discount_resource_id_fkey',
+      sql: 'ALTER TABLE discount ADD CONSTRAINT discount_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES resource(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
+    {
+      table: 'survey_response',
+      constraint: 'survey_response_booking_id_fkey',
+      sql: 'ALTER TABLE survey_response ADD CONSTRAINT survey_response_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES booking(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
   ];
 
   for (const { table, constraint, sql } of knownConstraints) {

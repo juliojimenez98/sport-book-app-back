@@ -16,6 +16,9 @@ import BlockedSlot from "./BlockedSlot";
 import BranchImage from "./BranchImage";
 import TenantImage from "./TenantImage";
 import ResourceImage from "./ResourceImage";
+import Discount from "./Discount";
+import DiscountResource from "./DiscountResource";
+import SurveyResponse from "./SurveyResponse";
 
 // ============ TENANT ASSOCIATIONS ============
 Tenant.hasMany(Branch, { foreignKey: "tenantId", as: "branches" });
@@ -24,6 +27,7 @@ Tenant.hasMany(Booking, { foreignKey: "tenantId", as: "bookings" });
 Tenant.hasMany(UserRole, { foreignKey: "tenantId", as: "userRoles" });
 Tenant.hasMany(TenantImage, { foreignKey: "tenantId", as: "images" });
 TenantImage.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
+Tenant.hasMany(Discount, { foreignKey: "tenantId", as: "discounts" });
 
 // ============ BRANCH ASSOCIATIONS ============
 Branch.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
@@ -34,6 +38,7 @@ Branch.hasMany(BranchHours, { foreignKey: "branchId", as: "branchHours" });
 Branch.hasMany(UserRole, { foreignKey: "branchId", as: "userRoles" });
 Branch.hasMany(BranchImage, { foreignKey: "branchId", as: "images" });
 BranchImage.belongsTo(Branch, { foreignKey: "branchId", as: "branch" });
+Branch.hasMany(Discount, { foreignKey: "branchId", as: "discounts" });
 
 // Many-to-many: Branch <-> Sport through BranchSport
 Branch.belongsToMany(Sport, {
@@ -58,7 +63,6 @@ BranchSport.belongsTo(Sport, { foreignKey: "sportId", as: "sport" });
 // ============ RESOURCE ASSOCIATIONS ============
 Resource.belongsTo(Branch, { foreignKey: "branchId", as: "branch" });
 Resource.belongsTo(Sport, { foreignKey: "sportId", as: "sport" });
-Resource.hasMany(Booking, { foreignKey: "resourceId", as: "bookings" });
 Resource.hasMany(ResourceImage, { foreignKey: "resourceId", as: "images" });
 ResourceImage.belongsTo(Resource, { foreignKey: "resourceId", as: "resource" });
 
@@ -85,6 +89,28 @@ Booking.hasOne(BookingCancellation, {
   foreignKey: "bookingId",
   as: "cancellation",
 });
+Booking.belongsTo(Discount, { foreignKey: "discountId", as: "discount" });
+Booking.hasOne(SurveyResponse, { foreignKey: "bookingId", as: "surveyResponse" });
+
+// ============ DISCOUNT ASSOCIATIONS ============
+Discount.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
+Discount.belongsTo(Branch, { foreignKey: "branchId", as: "branch" });
+Discount.hasMany(Booking, { foreignKey: "discountId", as: "bookings" });
+
+// Many-to-many: Discount <-> Resource through DiscountResource
+Discount.belongsToMany(Resource, {
+  through: DiscountResource,
+  foreignKey: "discountId",
+  as: "resources",
+});
+Resource.belongsToMany(Discount, {
+  through: DiscountResource,
+  foreignKey: "resourceId",
+  as: "discounts",
+});
+
+// ============ SURVEY RESPONSE ASSOCIATIONS ============
+SurveyResponse.belongsTo(Booking, { foreignKey: "bookingId", as: "booking" });
 
 // ============ BOOKING CANCELLATION ASSOCIATIONS ============
 BookingCancellation.belongsTo(Booking, {
@@ -140,4 +166,7 @@ export {
   BranchImage,
   TenantImage,
   ResourceImage,
+  Discount,
+  DiscountResource,
+  SurveyResponse,
 };

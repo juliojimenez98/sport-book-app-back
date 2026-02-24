@@ -37,8 +37,21 @@ export const RoleName = {
   CLIENTE: 'cliente',
 } as const;
 
-
 export type RoleNameType = typeof RoleName[keyof typeof RoleName];
+
+export const DiscountType = {
+  PERCENTAGE: 'percentage',
+  FIXED_AMOUNT: 'fixed_amount'
+} as const;
+
+export type DiscountTypeEnum = typeof DiscountType[keyof typeof DiscountType];
+
+export const DiscountConditionType = {
+  PROMO_CODE: 'promo_code',
+  TIME_BASED: 'time_based'
+} as const;
+
+export type DiscountConditionTypeEnum = typeof DiscountConditionType[keyof typeof DiscountConditionType];
 
 // ============ AUTH INTERFACES ============
 export interface TokenPayload {
