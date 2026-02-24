@@ -172,6 +172,7 @@ Booking.init(
     originalPrice: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
+      defaultValue: 0,
       field: "original_price",
     },
     currency: {
