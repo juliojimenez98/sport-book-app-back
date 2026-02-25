@@ -2,12 +2,15 @@ import { Request, Response, NextFunction } from "express";
 import {
   Resource,
   Branch,
+  Tenant,
   Sport,
   Booking,
   BlockedSlot,
+  Discount,
+  DiscountResource,
   ResourceImage,
 } from "../models/associations";
-import { AuthenticatedRequest, BookingStatus } from "../interfaces";
+import { AuthenticatedRequest, BookingStatus, DiscountConditionType } from "../interfaces";
 import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
 import { hasAccessToBranch } from "../middlewares/authorize";
 import {
@@ -259,7 +262,9 @@ export const getResourceCalendar = async (
     const { from, to } = req.query;
 
     const resource = await Resource.findByPk(resourceId, {
-      include: [{ model: Branch, as: "branch" }],
+      include: [
+        { model: Branch, as: "branch", include: [{ model: Tenant, as: "tenant" }] }
+      ],
     });
     if (!resource) {
       throw notFound("Resource not found");
@@ -307,6 +312,37 @@ export const getResourceCalendar = async (
       ],
     });
 
+    // Get active time-based discounts for this resource, branch, or tenant
+    const discounts = await Discount.findAll({
+      where: {
+        isActive: true,
+        conditionType: DiscountConditionType.TIME_BASED,
+        [Op.or]: [
+          { branchId: (resource as any).branchId } as any,
+          { tenantId: (resource as any).branch.tenantId, branchId: null } as any,
+        ],
+      },
+    });
+
+    // Filter discounts to only include those that either:
+    // 1. Are linked specifically to this resource
+    // 2. Are branch/tenant wide (no entries in DiscountResource)
+    const applicableDiscounts = await Promise.all(
+      discounts.map(async (d) => {
+        const count = await DiscountResource.count({
+          where: { discountId: d.discountId },
+        });
+        // If count is 0, it's a branch/tenant wide discount
+        if (count === 0) return d;
+        
+        // If count > 0, check if this specific resource is linked
+        const isLinked = await DiscountResource.findOne({
+          where: { discountId: d.discountId, resourceId: parseInt(resourceId) }
+        });
+        return isLinked ? d : null;
+      })
+    ).then(results => results.filter((d): d is Discount => d !== null));
+
     res.json({
       success: true,
       data: {
@@ -325,6 +361,15 @@ export const getResourceCalendar = async (
           date: bs.date,
           startTime: bs.startTime,
           endTime: bs.endTime,
+        })),
+        discounts: applicableDiscounts.map((d) => ({
+          discountId: d.discountId,
+          name: d.name,
+          type: d.type,
+          value: d.value,
+          daysOfWeek: d.daysOfWeek,
+          startTime: d.startTime,
+          endTime: d.endTime,
         })),
       },
     });
