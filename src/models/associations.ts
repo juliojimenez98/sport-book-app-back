@@ -18,6 +18,7 @@ import TenantImage from "./TenantImage";
 import ResourceImage from "./ResourceImage";
 import Discount from "./Discount";
 import DiscountResource from "./DiscountResource";
+import UserCard from "./UserCard";
 import SurveyResponse from "./SurveyResponse";
 
 // ============ TENANT ASSOCIATIONS ============
@@ -74,6 +75,7 @@ AppUser.hasMany(BookingCancellation, {
   foreignKey: "cancelledBy",
   as: "cancellations",
 });
+AppUser.hasMany(UserCard, { foreignKey: "userId", as: "cards" });
 
 // ============ GUEST ASSOCIATIONS ============
 Guest.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
@@ -144,6 +146,8 @@ BlockedSlot.belongsTo(AppUser, {
   foreignKey: "createdBy",
   as: "createdByUser",
 });
+UserCard.belongsTo(AppUser, { foreignKey: "userId", as: "user" });
+
 Branch.hasMany(BlockedSlot, { foreignKey: "branchId", as: "blockedSlots" });
 Resource.hasMany(BlockedSlot, { foreignKey: "resourceId", as: "blockedSlots" });
 
@@ -168,5 +172,6 @@ export {
   ResourceImage,
   Discount,
   DiscountResource,
+  UserCard,
   SurveyResponse,
 };

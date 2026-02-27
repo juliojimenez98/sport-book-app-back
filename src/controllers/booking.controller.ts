@@ -13,6 +13,7 @@ import {
 import {
   AuthenticatedRequest,
   BookingStatus,
+  BookingStatusType,
   BookingSource,
   DiscountType,
   DiscountConditionType,
@@ -214,7 +215,7 @@ export const createBooking = async (
     }
 
     // Determine initial status based on branch setting
-    const initialStatus = branch.requiresApproval
+    const initialStatus: BookingStatusType = branch.requiresApproval
       ? BookingStatus.PENDING
       : BookingStatus.CONFIRMED;
 
@@ -761,6 +762,50 @@ export const rejectBooking = async (
     res.json({
       success: true,
       data: booking,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    next(error);
+  }
+};
+
+// POST /bookings/:id/pay
+export const processPayment = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { id } = req.params;
+    const { cardId, saveCard, cardData } = req.body;
+
+    const booking = await Booking.findByPk(id, {
+      include: [{ model: Branch, as: "branch" }],
+      transaction,
+    });
+
+    if (!booking) throw notFound("Booking not found");
+    if (booking.status !== BookingStatus.PENDING_PAYMENT) {
+      throw badRequest("Booking is not in pending payment status");
+    }
+
+    // Simulate payment processing...
+    console.log(`Processing payment for booking ${id} with amount ${booking.totalPrice}`);
+
+    // If payment is "successful"
+    const nextStatus = (booking as any).branch.requiresApproval
+      ? BookingStatus.PENDING
+      : BookingStatus.CONFIRMED;
+
+    await booking.update({ status: nextStatus }, { transaction });
+
+    await transaction.commit();
+
+    res.json({
+      success: true,
+      message: "Payment processed successfully",
+      data: { status: nextStatus },
     });
   } catch (error) {
     await transaction.rollback();

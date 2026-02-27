@@ -21,6 +21,7 @@ import userRoutes from "../routes/user.routes";
 import publicRoutes from "../routes/public.routes";
 import uploadRoutes from "../routes/upload.routes";
 import discountRoutes from "../routes/discount.routes";
+import cardRoutes from "../routes/card.routes";
 import { getAsset } from "../controllers/upload.controller";
 
 // Import associations to set up relationships
@@ -84,6 +85,7 @@ class Server {
     this.app.use("/api/users", userRoutes);
     this.app.use("/api/upload", uploadRoutes);
     this.app.use("/api/discounts", discountRoutes);
+    this.app.use("/api/cards", cardRoutes);
 
     // 404 handler
     this.app.use((_req: Request, res: Response) => {
@@ -124,7 +126,7 @@ class Server {
             EXCLUDE USING gist (
               resource_id WITH =,
               tstzrange(start_at, end_at, '[)') WITH &&
-            ) WHERE (status IN ('pending', 'confirmed'));
+            ) WHERE (status IN ('pending', 'pending_payment', 'confirmed'));
           END IF;
         END $$;
       `);

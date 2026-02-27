@@ -154,6 +154,11 @@ const ensureConstraints = async (): Promise<void> => {
       constraint: 'discount_resource_resource_id_fkey',
       sql: 'ALTER TABLE discount_resource ADD CONSTRAINT discount_resource_resource_id_fkey FOREIGN KEY (resource_id) REFERENCES resource(id) ON DELETE CASCADE ON UPDATE CASCADE',
     },
+    {
+      table: 'user_card',
+      constraint: 'user_card_user_id_fkey',
+      sql: 'ALTER TABLE user_card ADD CONSTRAINT user_card_user_id_fkey FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE ON UPDATE CASCADE',
+    },
   ];
 
   for (const { table, constraint, sql } of knownConstraints) {

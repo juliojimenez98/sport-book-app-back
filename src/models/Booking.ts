@@ -146,6 +146,7 @@ Booking.init(
         isIn: [
           [
             BookingStatus.PENDING,
+            BookingStatus.PENDING_PAYMENT,
             BookingStatus.CONFIRMED,
             BookingStatus.CANCELLED,
             BookingStatus.COMPLETED,

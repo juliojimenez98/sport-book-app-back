@@ -757,6 +757,27 @@ export const getBranchDashboardStats = async (
       },
     });
 
+    // Pending bookings list (for management)
+    const pendingBookingsList = await Booking.findAll({
+      where: {
+        branchId: parseInt(branchId),
+        status: "pending",
+      },
+      order: [["startAt", "ASC"]],
+      include: [
+        {
+          model: Resource,
+          as: "resource",
+          attributes: ["resourceId", "name"],
+        },
+        {
+          model: AppUser,
+          as: "user",
+          attributes: ["userId", "email", "firstName", "lastName", "phone"],
+        },
+      ],
+    });
+
     // Upcoming bookings (next 10)
     const upcomingBookings = await Booking.findAll({
       where: {
@@ -829,6 +850,7 @@ export const getBranchDashboardStats = async (
           occupancyRate: occupancyRate > 100 ? 100 : occupancyRate,
         },
         upcomingBookings,
+        pendingBookingsList,
         bookingsChart,
       },
     });

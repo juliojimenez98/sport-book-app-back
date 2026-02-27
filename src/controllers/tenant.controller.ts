@@ -283,6 +283,35 @@ export const getTenantDashboardStats = async (
       },
     });
 
+    // Revenue: sum of totalPrice for confirmed/completed bookings
+    // totalPrice already reflects the final price after any discount
+    const confirmedStatuses = ["confirmed", "completed"];
+
+    const monthlyRevenueResult = await Booking.findAll({
+      where: {
+        tenantId: parseInt(id),
+        startAt: { [Op.gte]: firstOfMonth },
+        status: { [Op.in]: confirmedStatuses },
+      },
+      attributes: ["totalPrice"],
+    });
+    const totalRevenueMonth = monthlyRevenueResult.reduce(
+      (sum, b) => sum + Number(b.totalPrice || 0),
+      0,
+    );
+
+    const allTimeRevenueResult = await Booking.findAll({
+      where: {
+        tenantId: parseInt(id),
+        status: { [Op.in]: confirmedStatuses },
+      },
+      attributes: ["totalPrice"],
+    });
+    const totalRevenueAllTime = allTimeRevenueResult.reduce(
+      (sum, b) => sum + Number(b.totalPrice || 0),
+      0,
+    );
+
     // Get staff/users count - users with roles in this tenant
     const tenantUserRoles = await UserRole.findAll({
       where: {
@@ -470,6 +499,8 @@ export const getTenantDashboardStats = async (
           pendingBookings,
           monthlyBookings,
           staffCount,
+          totalRevenueMonth: parseFloat(totalRevenueMonth.toFixed(2)),
+          totalRevenueAllTime: parseFloat(totalRevenueAllTime.toFixed(2)),
         },
         recentBookings,
         branchSummary,

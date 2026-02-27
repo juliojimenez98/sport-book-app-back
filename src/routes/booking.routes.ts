@@ -6,6 +6,7 @@ import {
   getMyBookings,
   confirmBooking,
   rejectBooking,
+  processPayment,
 } from '../controllers/booking.controller';
 import { authenticate, optionalAuth } from '../middlewares/authenticate';
 import { authorize } from '../middlewares/authorize';
@@ -64,6 +65,13 @@ router.put(
   validate(rejectBookingSchema),
   authorize({ roles: [RoleName.SUPER_ADMIN, RoleName.TENANT_ADMIN, RoleName.BRANCH_ADMIN, RoleName.STAFF] }),
   rejectBooking
+);
+
+router.post(
+  '/:id/pay',
+  authenticate,
+  validate(idParamSchema, 'params'),
+  processPayment
 );
 
 // GET /me/bookings - this route is handled separately
