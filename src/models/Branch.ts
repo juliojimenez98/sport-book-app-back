@@ -24,6 +24,7 @@ interface BranchAttributes {
   amenitiesDescription?: string;
   // Booking settings
   requiresApproval: boolean;
+  requiresAddress: boolean;
   // Status
   isActive: boolean;
   createdAt?: Date;
@@ -46,6 +47,7 @@ interface BranchCreationAttributes extends Optional<
   | "hasEquipmentRental"
   | "amenitiesDescription"
   | "requiresApproval"
+  | "requiresAddress"
 > {}
 
 class Branch
@@ -74,6 +76,7 @@ class Branch
   public amenitiesDescription?: string;
   // Booking settings
   public requiresApproval!: boolean;
+  public requiresAddress!: boolean;
   // Status
   public isActive!: boolean;
   public readonly createdAt!: Date;
@@ -187,6 +190,12 @@ Branch.init(
       allowNull: false,
       defaultValue: false,
       field: "requires_approval",
+    },
+    requiresAddress: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: "requires_address",
     },
     isActive: {
       type: DataTypes.BOOLEAN,

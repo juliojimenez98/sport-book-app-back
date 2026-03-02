@@ -480,8 +480,62 @@ export const me = async (
         firstName: user.firstName,
         lastName: user.lastName,
         phone: user.phone,
+        address: user.address,
         isActive: user.isActive,
         roles,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── PATCH /auth/me ───────────────────────────────────────────────────────────
+
+export const updateMe = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      throw unauthorized("Not authenticated");
+    }
+
+    const { firstName, lastName, phone, address } = req.body as {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      address?: string;
+    };
+
+    const user = await AppUser.findByPk(req.user.userId, {
+      attributes: { exclude: ["passwordHash"] },
+    });
+
+    if (!user) {
+      throw notFound("User not found");
+    }
+
+    const updates: Partial<{ firstName: string; lastName: string; phone: string; address: string }> = {};
+    if (firstName !== undefined) updates.firstName = firstName;
+    if (lastName !== undefined) updates.lastName = lastName;
+    if (phone !== undefined) updates.phone = phone;
+    if (address !== undefined) updates.address = address;
+
+    await user.update(updates);
+
+    res.json({
+      success: true,
+      data: {
+        userId: user.userId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        address: user.address,
+        isActive: user.isActive,
         createdAt: user.createdAt,
       },
     });

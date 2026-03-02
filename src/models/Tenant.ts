@@ -11,6 +11,7 @@ interface TenantAttributes {
   primaryColor?: string;
   secondaryColor?: string;
   accentColor?: string;
+  requiresAddress: boolean;
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -18,7 +19,7 @@ interface TenantAttributes {
 
 interface TenantCreationAttributes extends Optional<
   TenantAttributes,
-  "tenantId" | "isActive"
+  "tenantId" | "isActive" | "requiresAddress"
 > {}
 
 class Tenant
@@ -34,6 +35,7 @@ class Tenant
   public primaryColor?: string;
   public secondaryColor?: string;
   public accentColor?: string;
+  public requiresAddress!: boolean;
   public isActive!: boolean;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -89,6 +91,12 @@ Tenant.init(
       allowNull: false,
       defaultValue: true,
       field: "is_active",
+    },
+    requiresAddress: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: "requires_address",
     },
   },
   {

@@ -82,7 +82,7 @@ export const getResourceById = async (
         {
           model: Branch,
           as: "branch",
-          attributes: ["branchId", "name", "tenantId", "timezone"],
+          attributes: ["branchId", "name", "tenantId", "timezone", "requiresAddress"],
         },
         {
           model: Sport,

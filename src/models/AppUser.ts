@@ -8,6 +8,7 @@ interface AppUserAttributes {
   firstName: string;
   lastName: string;
   phone?: string;
+  address?: string;
   isActive: boolean;
   emailVerifiedAt?: Date;
   createdAt?: Date;
@@ -29,6 +30,7 @@ class AppUser
   public firstName!: string;
   public lastName!: string;
   public phone?: string;
+  public address?: string;
   public isActive!: boolean;
   public emailVerifiedAt?: Date;
   public readonly createdAt!: Date;
@@ -65,6 +67,10 @@ AppUser.init(
     },
     phone: {
       type: DataTypes.STRING(20),
+      allowNull: true,
+    },
+    address: {
+      type: DataTypes.STRING(500),
       allowNull: true,
     },
     isActive: {

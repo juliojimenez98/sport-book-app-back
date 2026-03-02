@@ -5,6 +5,7 @@ import {
   refresh,
   logout,
   me,
+  updateMe,
   verifyEmail,
   forgotPassword,
   resetPassword,
@@ -59,6 +60,13 @@ router.get(
   '/me',
   authenticate,
   me
+);
+
+// PATCH /auth/me
+router.patch(
+  '/me',
+  authenticate,
+  updateMe
 );
 
 // GET /auth/verify-email?token=...

@@ -102,6 +102,36 @@ export const createBooking = async (
     if (req.user) {
       // Logged in user
       userId = req.user.userId;
+
+      // Enforce address requirement (branch-level or tenant-level)
+      if (branch.requiresAddress) {
+        const userRecord = await AppUser.findByPk(userId, {
+          attributes: ["userId", "address"],
+          transaction,
+        });
+        if (!userRecord?.address) {
+          throw badRequest(
+            "Este centro deportivo requiere que tengas una dirección registrada en tu perfil antes de reservar.",
+          );
+        }
+      } else {
+        // Check tenant-level requirement
+        const tenant = await Tenant.findByPk(branch.tenantId, {
+          attributes: ["tenantId", "requiresAddress"],
+          transaction,
+        });
+        if (tenant?.requiresAddress) {
+          const userRecord = await AppUser.findByPk(userId, {
+            attributes: ["userId", "address"],
+            transaction,
+          });
+          if (!userRecord?.address) {
+            throw badRequest(
+              "Este centro deportivo requiere que tengas una dirección registrada en tu perfil antes de reservar.",
+            );
+          }
+        }
+      }
     } else if (guest) {
       // Guest booking - find or create guest
       const [guestRecord] = await Guest.findOrCreate({
@@ -577,7 +607,7 @@ export const getBranchBookings = async (
         {
           model: AppUser,
           as: "user",
-          attributes: ["userId", "email", "firstName", "lastName"],
+          attributes: ["userId", "email", "firstName", "lastName", "address"],
         },
         {
           model: Guest,

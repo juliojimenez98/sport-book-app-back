@@ -411,6 +411,7 @@ router.get(
               "hasEquipmentRental",
               "amenitiesDescription",
               "requiresApproval",
+              "requiresAddress",
             ],
             include: [
               {
@@ -423,6 +424,7 @@ router.get(
                   "primaryColor",
                   "secondaryColor",
                   "accentColor",
+                  "requiresAddress",
                 ],
               },
             ],

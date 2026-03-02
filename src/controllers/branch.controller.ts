@@ -773,7 +773,7 @@ export const getBranchDashboardStats = async (
         {
           model: AppUser,
           as: "user",
-          attributes: ["userId", "email", "firstName", "lastName", "phone"],
+          attributes: ["userId", "email", "firstName", "lastName", "phone", "address"],
         },
       ],
     });
