@@ -94,7 +94,10 @@ export const getAllBranches = async (
     if (accessibleBranchIds !== null) {
       whereClause.branchId = accessibleBranchIds;
     }
-    if (accessibleTenantIds !== null) {
+    
+    if (req.query.tenantId) {
+      whereClause.tenantId = parseInt(req.query.tenantId as string, 10);
+    } else if (accessibleTenantIds !== null) {
       whereClause.tenantId = accessibleTenantIds;
     }
 

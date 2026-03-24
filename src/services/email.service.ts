@@ -626,7 +626,7 @@ function buildBookingEmailData(
   };
 }
 
-export type BookingEmailType = 'created_auto_confirmed' | 'created_pending' | 'confirmed' | 'rejected';
+export type BookingEmailType = 'created_auto_confirmed' | 'created_pending' | 'confirmed' | 'rejected' | 'cancelled';
 
 /**
  * Sends a notification email to the client (User or Guest)
@@ -662,6 +662,11 @@ export async function sendBookingNotificationToClient(booking: CompleteBooking, 
       eventName = "Actualización sobre tu reserva (Rechazada)";
       messageHTML = `Lamentablemente tu solicitud de reserva en <strong style="color:#0f172a;">${booking.branch?.name}</strong> ha sido <strong style="color:#ef4444;">rechazada</strong>.`;
       messageText = `Lamentablemente tu solicitud de reserva en ${booking.branch?.name} ha sido rechazada.`;
+      break;
+    case 'cancelled':
+      eventName = "Tu reserva ha sido cancelada";
+      messageHTML = `Tu reserva en <strong style="color:#0f172a;">${booking.branch?.name}</strong> ha sido <strong style="color:#ef4444;">cancelada</strong>.`;
+      messageText = `Tu reserva en ${booking.branch?.name} ha sido cancelada.`;
       break;
   }
 
@@ -729,7 +734,7 @@ async function getAdminEmailsForBranch(tenantId: number, branchId: number): Prom
 /**
  * Sends a notification email to the branch/tenant administrators
  */
-export async function sendBookingNotificationToAdmins(booking: CompleteBooking, type: 'created_auto_confirmed' | 'created_pending'): Promise<void> {
+export async function sendBookingNotificationToAdmins(booking: CompleteBooking, type: BookingEmailType): Promise<void> {
   if (!booking.branch?.tenantId || !booking.branch?.branchId) return;
   
   const adminEmails = await getAdminEmailsForBranch(booking.branch.tenantId, booking.branch.branchId);
@@ -739,6 +744,9 @@ export async function sendBookingNotificationToAdmins(booking: CompleteBooking, 
   let eventName = "";
   let messageHTML = "";
   let messageText = "";
+
+  const client = booking.user || booking.guest;
+  const clientFullName = client ? `${client.firstName} ${client.lastName}` : 'Cliente desconocido';
 
   switch (type) {
     case 'created_auto_confirmed':
@@ -750,6 +758,21 @@ export async function sendBookingNotificationToAdmins(booking: CompleteBooking, 
       eventName = "Nueva solicitud pendiente de aprobación";
       messageHTML = `Tienes una nueva reserva <strong style="color:#f59e0b;">pendiente de revisión</strong> en tu sucursal <strong style="color:#0f172a;">${booking.branch?.name}</strong>.<br/><br/>Entra al panel de control de Easy Sport Book para aprobarla o rechazarla.`;
       messageText = `Tienes una nueva reserva pendiente de revisión en tu sucursal ${booking.branch?.name}. Entra al panel de control de Easy Sport Book para aprobarla o rechazarla.`;
+      break;
+    case 'confirmed':
+      eventName = "Reserva confirmada por administrador";
+      messageHTML = `La reserva de <strong style="color:#0f172a;">${clientFullName}</strong> en <strong style="color:#0f172a;">${booking.branch?.name}</strong> ha sido <strong style="color:#10b981;">confirmada</strong>.`;
+      messageText = `La reserva de ${clientFullName} en ${booking.branch?.name} ha sido confirmada.`;
+      break;
+    case 'rejected':
+      eventName = "Reserva rechazada";
+      messageHTML = `La reserva de <strong style="color:#0f172a;">${clientFullName}</strong> en <strong style="color:#0f172a;">${booking.branch?.name}</strong> ha sido <strong style="color:#ef4444;">rechazada</strong>.`;
+      messageText = `La reserva de ${clientFullName} en ${booking.branch?.name} ha sido rechazada.`;
+      break;
+    case 'cancelled':
+      eventName = "Reserva cancelada por el cliente";
+      messageHTML = `<strong style="color:#0f172a;">${clientFullName}</strong> ha <strong style="color:#ef4444;">cancelado</strong> su reserva en <strong style="color:#0f172a;">${booking.branch?.name}</strong>.`;
+      messageText = `${clientFullName} ha cancelado su reserva en ${booking.branch?.name}.`;
       break;
   }
 
@@ -881,3 +904,263 @@ export async function sendPostBookingSurvey(booking: CompleteBooking, surveyUrl:
 
   console.log(`✅ Survey email sent to client ${client.email}`);
 }
+
+// ─── Class Enrollment Notifications ──────────────────────────────────────────
+
+export interface ClassEnrollmentEmailData {
+  className: string;
+  sportName: string;
+  branchName: string;
+  instructor?: string;
+  dateStr: string;
+  timeStr: string;
+  price: number;
+  currency: string;
+  spotsLeft: number;
+  maxCapacity: number;
+}
+
+function getClassEnrollmentEmailHtml(
+  recipientName: string,
+  eventName: string,
+  messageHTML: string,
+  data: ClassEnrollmentEmailData,
+): string {
+  const year = new Date().getFullYear();
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${eventName} · Easy Sport Book</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f1f5f9;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#14b8a6 0%,#06b6d4 100%);padding:32px 48px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">Easy Sport Book</h1>
+              <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:14px;">Clases deportivas</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:48px 48px 32px;">
+              <h2 style="margin:0 0 16px;color:#0f172a;font-size:22px;font-weight:700;">¡Hola, ${recipientName}! 👋</h2>
+              <div style="margin:0 0 28px;color:#475569;font-size:15px;line-height:1.7;">
+                ${messageHTML}
+              </div>
+
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin:0 0 32px;">
+                <tr>
+                  <td style="padding:24px;">
+                    <h3 style="margin:0 0 16px;color:#0f172a;font-size:16px;font-weight:600;border-bottom:1px solid #e2e8f0;padding-bottom:12px;">
+                      Detalle de la Clase
+                    </h3>
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td style="padding:8px 0;width:40%;color:#64748b;font-size:14px;">Clase:</td>
+                        <td style="padding:8px 0;width:60%;color:#0f172a;font-size:14px;font-weight:500;">${data.className}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Deporte:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:500;">${data.sportName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Sucursal:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:500;">${data.branchName}</td>
+                      </tr>
+                      ${data.instructor ? `<tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Instructor:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:500;">${data.instructor}</td>
+                      </tr>` : ''}
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Fecha:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:500;">${data.dateStr}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Hora:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:500;">${data.timeStr}</td>
+                      </tr>
+                      ${data.price > 0 ? `<tr>
+                        <td style="padding:8px 0;border-top:1px dashed #e2e8f0;"></td>
+                        <td style="padding:8px 0;border-top:1px dashed #e2e8f0;"></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Precio:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:16px;font-weight:700;">${formatCurrency(data.price, data.currency)}</td>
+                      </tr>` : ''}
+                      <tr>
+                        <td style="padding:8px 0;color:#64748b;font-size:14px;">Cupos restantes:</td>
+                        <td style="padding:8px 0;color:#0f172a;font-size:14px;font-weight:500;">${data.spotsLeft} de ${data.maxCapacity}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f8fafc;padding:32px 48px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;color:#94a3b8;font-size:13px;">
+                © ${year} Easy Sport Book. Todos los derechos reservados.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function getClassEnrollmentEmailText(
+  recipientName: string,
+  messageText: string,
+  data: ClassEnrollmentEmailData,
+): string {
+  let text = `Hola ${recipientName},
+
+${messageText}
+
+DETALLE DE LA CLASE
+-------------------------------------------------
+Clase: ${data.className}
+Deporte: ${data.sportName}
+Sucursal: ${data.branchName}
+`;
+  if (data.instructor) text += `Instructor: ${data.instructor}\n`;
+  text += `Fecha: ${data.dateStr}
+Hora: ${data.timeStr}
+`;
+  if (data.price > 0) text += `Precio: ${formatCurrency(data.price, data.currency)}\n`;
+  text += `Cupos restantes: ${data.spotsLeft} de ${data.maxCapacity}
+-------------------------------------------------
+
+El equipo de Easy Sport Book
+© ${new Date().getFullYear()} Easy Sport Book`;
+
+  return text;
+}
+
+export interface ClassForEmail {
+  classId: number;
+  name: string;
+  startsAt: Date | string;
+  endsAt: Date | string;
+  instructor?: string;
+  price: number | string;
+  currency: string;
+  maxCapacity: number;
+  sport?: { name: string };
+  branch?: { name: string; tenantId: number; branchId: number };
+}
+
+function buildClassEmailData(
+  sportClass: ClassForEmail,
+  spotsLeft: number,
+): ClassEnrollmentEmailData {
+  const startDate = new Date(sportClass.startsAt);
+  const endDate = new Date(sportClass.endsAt);
+  const optionsDate: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Santiago' };
+  const optionsTime: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' };
+  
+  return {
+    className: sportClass.name,
+    sportName: sportClass.sport?.name || 'Deporte',
+    branchName: sportClass.branch?.name || 'Sucursal',
+    instructor: sportClass.instructor,
+    dateStr: startDate.toLocaleDateString('es-CL', optionsDate),
+    timeStr: `${startDate.toLocaleTimeString('es-CL', optionsTime)} a ${endDate.toLocaleTimeString('es-CL', optionsTime)}`,
+    price: typeof sportClass.price === 'string' ? parseFloat(sportClass.price) : sportClass.price,
+    currency: sportClass.currency,
+    spotsLeft,
+    maxCapacity: sportClass.maxCapacity,
+  };
+}
+
+export type ClassEnrollmentEmailType = 'enrolled' | 'cancelled';
+
+/**
+ * Sends a class enrollment notification email to the client.
+ */
+export async function sendClassEnrollmentEmail(
+  userEmail: string,
+  userName: string,
+  sportClass: ClassForEmail,
+  spotsLeft: number,
+  type: ClassEnrollmentEmailType,
+): Promise<void> {
+  const data = buildClassEmailData(sportClass, spotsLeft);
+
+  let eventName = "";
+  let messageHTML = "";
+  let messageText = "";
+
+  if (type === 'enrolled') {
+    eventName = `¡Inscripción exitosa en ${data.className}!`;
+    messageHTML = `Te has inscrito exitosamente en la clase <strong style="color:#0f172a;">${data.className}</strong> en <strong style="color:#0f172a;">${data.branchName}</strong>. ¡Te esperamos!`;
+    messageText = `Te has inscrito exitosamente en la clase ${data.className} en ${data.branchName}. ¡Te esperamos!`;
+  } else {
+    eventName = `Inscripción cancelada: ${data.className}`;
+    messageHTML = `Tu inscripción en la clase <strong style="color:#0f172a;">${data.className}</strong> ha sido <strong style="color:#ef4444;">cancelada</strong>. El cupo ha quedado disponible para otros participantes.`;
+    messageText = `Tu inscripción en la clase ${data.className} ha sido cancelada. El cupo ha quedado disponible para otros participantes.`;
+  }
+
+  await sendEmail({
+    to: userEmail,
+    subject: `Easy Sport Book — ${eventName}`,
+    html: getClassEnrollmentEmailHtml(userName, eventName, messageHTML, data),
+    text: getClassEnrollmentEmailText(userName, messageText, data),
+  });
+
+  console.log(`✅ Class enrollment [${type}] email sent to ${userEmail}`);
+}
+
+/**
+ * Sends a class enrollment notification to branch/tenant admins.
+ */
+export async function sendClassEnrollmentAdminEmail(
+  sportClass: ClassForEmail,
+  userName: string,
+  spotsLeft: number,
+  type: ClassEnrollmentEmailType,
+): Promise<void> {
+  if (!sportClass.branch?.tenantId || !sportClass.branch?.branchId) return;
+
+  const adminEmails = await getAdminEmailsForBranch(sportClass.branch.tenantId, sportClass.branch.branchId);
+  if (adminEmails.length === 0) return;
+
+  const data = buildClassEmailData(sportClass, spotsLeft);
+
+  let eventName = "";
+  let messageHTML = "";
+  let messageText = "";
+
+  if (type === 'enrolled') {
+    eventName = `Nueva inscripción: ${data.className}`;
+    messageHTML = `<strong style="color:#0f172a;">${userName}</strong> se ha inscrito en la clase <strong style="color:#0f172a;">${data.className}</strong>. Quedan <strong>${spotsLeft}</strong> cupos disponibles.`;
+    messageText = `${userName} se ha inscrito en la clase ${data.className}. Quedan ${spotsLeft} cupos disponibles.`;
+  } else {
+    eventName = `Inscripción cancelada: ${data.className}`;
+    messageHTML = `<strong style="color:#0f172a;">${userName}</strong> ha <strong style="color:#ef4444;">cancelado</strong> su inscripción en la clase <strong style="color:#0f172a;">${data.className}</strong>. Ahora hay <strong>${spotsLeft}</strong> cupos disponibles.`;
+    messageText = `${userName} ha cancelado su inscripción en la clase ${data.className}. Ahora hay ${spotsLeft} cupos disponibles.`;
+  }
+
+  await Promise.all(
+    adminEmails.map(email =>
+      sendEmail({
+        to: email,
+        subject: `Easy Sport Book — ${eventName}`,
+        html: getClassEnrollmentEmailHtml("Administrador", eventName, messageHTML, data),
+        text: getClassEnrollmentEmailText("Administrador", messageText, data),
+      })
+    )
+  );
+
+  console.log(`✅ Class enrollment [${type}] admin notification sent to ${adminEmails.length} admins.`);
+}
+

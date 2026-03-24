@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { AppUser, Role, UserRole, RefreshToken } from "../models/associations";
+import { AppUser, Role, UserRole, RefreshToken, Tenant, Branch } from "../models/associations";
 
 import {
   hashPassword,
@@ -135,6 +135,16 @@ export const login = async (
               model: Role,
               as: "role",
             },
+            {
+              model: Tenant,
+              as: "tenant",
+              attributes: ["tenantId", "name"]
+            },
+            {
+              model: Branch,
+              as: "branch",
+              attributes: ["branchId", "name"]
+            }
           ],
         },
       ],
@@ -171,6 +181,8 @@ export const login = async (
       scope: ur.scope,
       tenantId: ur.tenantId,
       branchId: ur.branchId,
+      tenant: ur.tenant ? { id: ur.tenant.tenantId, name: ur.tenant.name } : undefined,
+      branch: ur.branch ? { id: ur.branch.branchId, name: ur.branch.name } : undefined,
     }));
 
     // Generate tokens
@@ -317,6 +329,16 @@ export const refresh = async (
               model: Role,
               as: "role",
             },
+            {
+              model: Tenant,
+              as: "tenant",
+              attributes: ["tenantId", "name"]
+            },
+            {
+              model: Branch,
+              as: "branch",
+              attributes: ["branchId", "name"]
+            }
           ],
         },
       ],
@@ -359,6 +381,8 @@ export const refresh = async (
       scope: ur.scope,
       tenantId: ur.tenantId,
       branchId: ur.branchId,
+      tenant: ur.tenant ? { id: ur.tenant.tenantId, name: ur.tenant.name } : undefined,
+      branch: ur.branch ? { id: ur.branch.branchId, name: ur.branch.name } : undefined,
     }));
 
     // Generate new tokens
@@ -470,6 +494,8 @@ export const me = async (
       scope: ur.scope,
       tenantId: ur.tenantId,
       branchId: ur.branchId,
+      tenant: ur.tenant ? { id: ur.tenant.tenantId, name: ur.tenant.name } : undefined,
+      branch: ur.branch ? { id: ur.branch.branchId, name: ur.branch.name } : undefined,
     }));
 
     res.json({

@@ -22,7 +22,9 @@ import publicRoutes from "../routes/public.routes";
 import uploadRoutes from "../routes/upload.routes";
 import discountRoutes from "../routes/discount.routes";
 import cardRoutes from "../routes/card.routes";
+import classRoutes, { getMyEnrollments } from "../routes/class.routes";
 import { getAsset } from "../controllers/upload.controller";
+import { authenticate } from "../middlewares/authenticate";
 
 // Import associations to set up relationships
 import "../models/associations";
@@ -86,6 +88,11 @@ class Server {
     this.app.use("/api/upload", uploadRoutes);
     this.app.use("/api/discounts", discountRoutes);
     this.app.use("/api/cards", cardRoutes);
+    this.app.use("/api/classes", classRoutes);
+    // Branch-scoped class routes (create via /api/branches/:branchId/classes)
+    this.app.use("/api", classRoutes);
+    // Client: GET /api/me/enrollments
+    this.app.get("/api/me/enrollments", authenticate, getMyEnrollments);
 
     // 404 handler
     this.app.use((_req: Request, res: Response) => {

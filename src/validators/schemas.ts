@@ -271,6 +271,63 @@ export const resetPasswordSchema = z.object({
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
 });
 
+// ============ CLASS SCHEMAS ============
+export const createClassSchema = z
+  .object({
+    sportId: z.number().int().positive(),
+    resourceId: z.number().int().positive().optional(),
+    name: z.string().min(1).max(150),
+    description: z.string().max(2000).optional(),
+    instructor: z.string().max(100).optional(),
+    startsAt: z.string().datetime({ local: true }),
+    endsAt: z.string().datetime({ local: true }),
+    maxCapacity: z.number().int().min(1).max(20).optional().default(20),
+    price: z.number().min(0).optional().default(0),
+    currency: z.string().length(3).optional(),
+  })
+  .refine(
+    (data) => new Date(data.startsAt) < new Date(data.endsAt),
+    { message: "End time must be after start time" },
+  );
+
+export const updateClassSchema = z.object({
+  name: z.string().min(1).max(150).optional(),
+  description: z.string().max(2000).optional(),
+  instructor: z.string().max(100).optional(),
+  startsAt: z.string().datetime({ local: true }).optional(),
+  endsAt: z.string().datetime({ local: true }).optional(),
+  maxCapacity: z.number().int().min(1).max(20).optional(),
+  price: z.number().min(0).optional(),
+  currency: z.string().length(3).optional(),
+  isActive: z.boolean().optional(),
+  resourceId: z.number().int().positive().nullable().optional(),
+});
+
+// Recurring class creation
+export const createRecurringClassesSchema = z
+  .object({
+    sportId: z.number().int().positive(),
+    resourceId: z.number().int().positive().optional(),
+    name: z.string().min(1).max(150),
+    description: z.string().max(2000).optional(),
+    instructor: z.string().max(100).optional(),
+    // 0=Sun 1=Mon ... 6=Sat
+    daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM"),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM"),
+    maxCapacity: z.number().int().min(1).max(20).optional().default(20),
+    price: z.number().min(0).optional().default(0),
+    currency: z.string().length(3).optional(),
+  })
+  .refine((data) => data.startDate <= data.endDate, {
+    message: "endDate must be >= startDate",
+  })
+  .refine((data) => data.startTime < data.endTime, {
+    message: "endTime must be after startTime",
+  });
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -283,3 +340,6 @@ export type UpdateResourceInput = z.infer<typeof updateResourceSchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 export type RejectBookingInput = z.infer<typeof rejectBookingSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type CreateClassInput = z.infer<typeof createClassSchema>;
+export type UpdateClassInput = z.infer<typeof updateClassSchema>;
+export type CreateRecurringClassesInput = z.infer<typeof createRecurringClassesSchema>;

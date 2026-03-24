@@ -396,6 +396,23 @@ export const cancelBooking = async (
 
     await transaction.commit();
 
+    // Send email notifications for cancellation
+    const completeBookingForEmail = await Booking.findByPk(booking.bookingId, {
+      include: [
+        { model: Resource, as: "resource", attributes: ["resourceId", "name"] },
+        { model: Branch, as: "branch", attributes: ["branchId", "name", "tenantId"] },
+        { model: AppUser, as: "user", attributes: ["email", "firstName", "lastName"] },
+        { model: Guest, as: "guest", attributes: ["email", "firstName", "lastName"] },
+      ],
+    });
+
+    if (completeBookingForEmail) {
+      Promise.allSettled([
+        sendBookingNotificationToClient(completeBookingForEmail as any, 'cancelled'),
+        sendBookingNotificationToAdmins(completeBookingForEmail as any, 'cancelled'),
+      ]).catch(err => console.error("Failed to send cancellation emails:", err));
+    }
+
     res.json({
       success: true,
       message: "Booking cancelled successfully",
@@ -711,8 +728,10 @@ export const confirmBooking = async (
     });
 
     if (completeBookingForEmail) {
-      sendBookingNotificationToClient(completeBookingForEmail as any, 'confirmed')
-        .catch(err => console.error("Failed to send confirmed booking email:", err));
+      Promise.allSettled([
+        sendBookingNotificationToClient(completeBookingForEmail as any, 'confirmed'),
+        sendBookingNotificationToAdmins(completeBookingForEmail as any, 'confirmed'),
+      ]).catch(err => console.error("Failed to send confirmed booking emails:", err));
     }
 
     res.json({
@@ -785,8 +804,10 @@ export const rejectBooking = async (
     });
 
     if (completeBookingForEmail) {
-      sendBookingNotificationToClient(completeBookingForEmail as any, 'rejected')
-        .catch(err => console.error("Failed to send rejected booking email:", err));
+      Promise.allSettled([
+        sendBookingNotificationToClient(completeBookingForEmail as any, 'rejected'),
+        sendBookingNotificationToAdmins(completeBookingForEmail as any, 'rejected'),
+      ]).catch(err => console.error("Failed to send rejected booking emails:", err));
     }
 
     res.json({

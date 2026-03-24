@@ -18,3 +18,5 @@ export { default as TenantImage } from './TenantImage';
 export { default as ResourceImage } from './ResourceImage';
 export { default as Discount } from './Discount';
 export { default as SurveyResponse } from './SurveyResponse';
+export { default as SportClass } from './SportClass';
+export { default as ClassEnrollment } from './ClassEnrollment';

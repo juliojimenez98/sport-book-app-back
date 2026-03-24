@@ -9,6 +9,7 @@ import {
   Discount,
   DiscountResource,
   ResourceImage,
+  SportClass,
 } from "../models/associations";
 import { AuthenticatedRequest, BookingStatus, DiscountConditionType } from "../interfaces";
 import { notFound, badRequest, forbidden } from "../middlewares/errorHandler";
@@ -343,6 +344,17 @@ export const getResourceCalendar = async (
       })
     ).then(results => results.filter((d): d is Discount => d !== null));
 
+    // Get sport classes that use this resource in the date range
+    const classSlots = await SportClass.findAll({
+      where: {
+        resourceId: parseInt(resourceId),
+        isActive: true,
+        startsAt: { [Op.lt]: toDate },
+        endsAt: { [Op.gt]: fromDate },
+      },
+      attributes: ["classId", "name", "startsAt", "endsAt"],
+    });
+
     res.json({
       success: true,
       data: {
@@ -361,6 +373,12 @@ export const getResourceCalendar = async (
           date: bs.date,
           startTime: bs.startTime,
           endTime: bs.endTime,
+        })),
+        classSlots: classSlots.map((sc) => ({
+          classId: sc.classId,
+          name: sc.name,
+          startsAt: sc.startsAt,
+          endsAt: sc.endsAt,
         })),
         discounts: applicableDiscounts.map((d) => ({
           discountId: d.discountId,

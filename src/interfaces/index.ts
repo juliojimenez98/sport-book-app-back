@@ -67,6 +67,8 @@ export interface UserRoleInfo {
   scope: RoleScopeType;
   tenantId?: number;
   branchId?: number;
+  tenant?: { id: number; name: string };
+  branch?: { id: number; name: string };
 }
 
 export interface AuthTokens {

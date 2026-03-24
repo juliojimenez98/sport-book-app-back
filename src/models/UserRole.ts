@@ -1,6 +1,9 @@
 import { Model, DataTypes, Optional } from "sequelize";
 import sequelize from "../db/connection";
 import { RoleScope, RoleScopeType } from "../interfaces";
+import Role from "./Role";
+import Tenant from "./Tenant";
+import Branch from "./Branch";
 
 interface UserRoleAttributes {
   userRoleId: number;
@@ -30,6 +33,10 @@ class UserRole
   public branchId?: number;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
+  
+  public role?: Role;
+  public tenant?: Tenant;
+  public branch?: Branch;
 }
 
 UserRole.init(

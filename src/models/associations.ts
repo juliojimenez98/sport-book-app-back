@@ -20,6 +20,8 @@ import Discount from "./Discount";
 import DiscountResource from "./DiscountResource";
 import UserCard from "./UserCard";
 import SurveyResponse from "./SurveyResponse";
+import SportClass from "./SportClass";
+import ClassEnrollment from "./ClassEnrollment";
 
 // ============ TENANT ASSOCIATIONS ============
 Tenant.hasMany(Branch, { foreignKey: "tenantId", as: "branches" });
@@ -151,6 +153,20 @@ UserCard.belongsTo(AppUser, { foreignKey: "userId", as: "user" });
 Branch.hasMany(BlockedSlot, { foreignKey: "branchId", as: "blockedSlots" });
 Resource.hasMany(BlockedSlot, { foreignKey: "resourceId", as: "blockedSlots" });
 
+// ============ SPORT CLASS ASSOCIATIONS ============
+Tenant.hasMany(SportClass, { foreignKey: "tenantId", as: "sportClasses" });
+Branch.hasMany(SportClass, { foreignKey: "branchId", as: "sportClasses" });
+Sport.hasMany(SportClass, { foreignKey: "sportId", as: "sportClasses" });
+Resource.hasMany(SportClass, { foreignKey: "resourceId", as: "sportClasses" });
+SportClass.belongsTo(Tenant, { foreignKey: "tenantId", as: "tenant" });
+SportClass.belongsTo(Branch, { foreignKey: "branchId", as: "branch" });
+SportClass.belongsTo(Sport, { foreignKey: "sportId", as: "sport" });
+SportClass.belongsTo(Resource, { foreignKey: "resourceId", as: "resource" });
+SportClass.hasMany(ClassEnrollment, { foreignKey: "classId", as: "enrollments" });
+ClassEnrollment.belongsTo(SportClass, { foreignKey: "classId", as: "sportClass" });
+ClassEnrollment.belongsTo(AppUser, { foreignKey: "userId", as: "user" });
+AppUser.hasMany(ClassEnrollment, { foreignKey: "userId", as: "classEnrollments" });
+
 // Export all models
 export {
   Tenant,
@@ -174,4 +190,6 @@ export {
   DiscountResource,
   UserCard,
   SurveyResponse,
+  SportClass,
+  ClassEnrollment,
 };
